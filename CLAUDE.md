@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-React 19 + TypeScript + Vite 8 single-page app, currently the unmodified `create-vite` React-TS starter (`src/App.tsx` is still the template demo page). Package manager is **Yarn** (`yarn.lock`). UI library: **MUI** (`@mui/material`, `@mui/icons-material`) with Emotion as the styling engine.
+React 19 + TypeScript + Vite 8 single-page app. Package manager is **Yarn** (`yarn.lock`). UI library: **MUI** (`@mui/material`, `@mui/icons-material`) with Emotion as the styling engine.
 
 ## Task brief
 
@@ -34,7 +34,9 @@ There is no test runner configured yet. `yarn build` is the type-check gate — 
 
 - `index.html` → `src/main.tsx` (mounts `<App />` into `#root` under `StrictMode`) → `src/App.tsx`.
 - `main.tsx` wraps the app in MUI `ThemeProvider` + `CssBaseline` and loads Roboto (300/400/500/700) via `@fontsource/roboto`. The theme lives in `src/theme.ts` — customize palette/typography there rather than per-component.
-- Global styles in `src/index.css`, component styles in `src/App.css`.
+- `App.tsx` is the layout shell: a permanent MUI `Drawer` sidebar (`src/components/Sidebar.tsx`) plus a main area. Sections are defined once in `src/navigation.ts` (`SectionId` + `NAV_ITEMS`); the active section is plain `useState` in `App` (no router).
+- Styling goes through the MUI theme and `sx`; `src/index.css` is intentionally near-empty.
+- New files use double quotes + semicolons (the user's formatter).
 - `src/assets/` holds images imported as modules; `public/` holds files served from the site root (e.g. `public/icons.svg` sprite referenced as `/icons.svg#<id>`).
 
 ## TypeScript / lint constraints
