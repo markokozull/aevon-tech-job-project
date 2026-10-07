@@ -37,7 +37,6 @@ There is no test runner configured yet. `yarn build` is the type-check gate — 
 - `App.tsx` is the layout shell: a permanent MUI `Drawer` sidebar (`src/components/Sidebar.tsx`) plus a main area. Sections are defined once in `src/navigation.ts` (`SectionId` + `NAV_ITEMS`); the active section is plain `useState` in `App` (no router).
 - Styling goes through the MUI theme and `sx`; `src/index.css` is intentionally near-empty.
 - New files use double quotes + semicolons (the user's formatter).
-- `src/assets/` holds images imported as modules; `public/` holds files served from the site root (e.g. `public/icons.svg` sprite referenced as `/icons.svg#<id>`).
 
 ## TypeScript / lint constraints
 
