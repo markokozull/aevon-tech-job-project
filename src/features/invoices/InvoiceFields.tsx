@@ -4,19 +4,13 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { ReactNode } from "react";
 import FieldRow from "./FieldRow";
-import { formatNumber, MISSING } from "./format";
-import { LINE_FIELD_LABELS, isUncertain, type Issue } from "./status";
-import { flaggedBackground } from "./styles";
-import type { Extracted, FieldKey, Invoice, LineItem } from "./types";
+import LineItemsTable from "./LineItemsTable";
+import { lineItemsSum, type Issue } from "./status";
+import type { FieldKey, Invoice } from "./types";
 
 // Fields that go into bookkeeping: always visible, in the order they
 // appear on a paper invoice. Which fields belong here is a guess to
@@ -76,64 +70,6 @@ function FieldList({ invoice, keys, issues, form }: FieldListProps) {
   ));
 }
 
-function LineItemsTable({ items }: { items: LineItem[] }) {
-  const cell = (
-    field: Extracted<unknown>,
-    text: string,
-    align: "left" | "right" = "right",
-  ) => (
-    <TableCell
-      align={align}
-      sx={{
-        ...((field.value === null || isUncertain(field)) && flaggedBackground),
-      }}
-    >
-      {text}
-    </TableCell>
-  );
-
-  return (
-    <Box sx={{ overflowX: "auto" }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>{LINE_FIELD_LABELS.description}</TableCell>
-            <TableCell align="right">{LINE_FIELD_LABELS.quantity}</TableCell>
-            <TableCell align="right">{LINE_FIELD_LABELS.unitPrice}</TableCell>
-            <TableCell align="right">{LINE_FIELD_LABELS.vatRate}</TableCell>
-            <TableCell align="right">{LINE_FIELD_LABELS.lineTotal}</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {items.map((item, index) => (
-            <TableRow key={index}>
-              {cell(
-                item.description,
-                item.description.value ?? MISSING,
-                "left",
-              )}
-              {cell(
-                item.quantity,
-                item.quantity.value === null
-                  ? MISSING
-                  : `${item.quantity.value.toLocaleString("hr-HR")} ${item.unit.value ?? ""}`,
-              )}
-              {cell(item.unitPrice, formatNumber(item.unitPrice.value))}
-              {cell(
-                item.vatRate,
-                item.vatRate.value === null
-                  ? MISSING
-                  : `${item.vatRate.value} %`,
-              )}
-              {cell(item.lineTotal, formatNumber(item.lineTotal.value))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Box>
-  );
-}
-
 function Section({
   title,
   warnings,
@@ -188,9 +124,9 @@ function InvoiceFields({ invoice, issues, form }: Props) {
   const secondaryWarnings = issues.filter(
     ({ target }) => target !== "lineItems" && SECONDARY_FIELDS.includes(target),
   ).length;
-  const lineItemWarnings = issues.filter(
+  const lineItemIssues = issues.filter(
     (issue) => issue.target === "lineItems",
-  ).length;
+  );
 
   return (
     <Stack spacing={2}>
@@ -214,9 +150,13 @@ function InvoiceFields({ invoice, issues, form }: Props) {
 
       <Section
         title={`Stavke (${invoice.lineItems.length})`}
-        warnings={lineItemWarnings}
+        warnings={lineItemIssues.length}
       >
-        <LineItemsTable items={invoice.lineItems} />
+        <LineItemsTable
+          items={invoice.lineItems}
+          issues={lineItemIssues}
+          sum={lineItemsSum(invoice)}
+        />
       </Section>
     </Stack>
   );
