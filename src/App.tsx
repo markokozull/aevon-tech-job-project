@@ -2,6 +2,7 @@ import { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Sidebar from "./components/Sidebar";
+import CompanyTable from "./features/companies/CompanyTable";
 import InvoiceTable from "./features/invoices/InvoiceTable";
 import { invoices } from "./features/invoices/data";
 import { NAV_ITEMS, type SectionId } from "./navigation";
@@ -36,6 +37,9 @@ function App() {
             emptyText="Još nema potvrđenih računa."
             confirmed
           />
+        )}
+        {section === "companies" && (
+          <CompanyTable incoming={incoming} confirmed={confirmed} />
         )}
       </Box>
     </Box>
