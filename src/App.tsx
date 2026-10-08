@@ -4,6 +4,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { ToastContainer } from "react-toastify";
 import Sidebar from "./components/Sidebar";
+import CompanyInvoices from "./features/companies/CompanyInvoices";
 import CompanyTable from "./features/companies/CompanyTable";
 import InvoiceReview from "./features/invoices/InvoiceReview";
 import InvoiceTable from "./features/invoices/InvoiceTable";
@@ -27,6 +28,15 @@ function App() {
   const [filters, setFilters] = useState<InvoiceFilters>(NO_FILTERS);
   const updateFilters = (changes: Partial<InvoiceFilters>) =>
     setFilters((current) => ({ ...current, ...changes }));
+  // Firm whose invoices are open under "Firme"; null shows the firm list.
+  // It has its own filters, so opening a firm doesn't filter the main lists.
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companyFilters, setCompanyFilters] =
+    useState<InvoiceFilters>(NO_FILTERS);
+  const openCompany = (id: string) => {
+    setCompanyId(id);
+    setCompanyFilters(NO_FILTERS);
+  };
   const review = useReviewState();
   const { confirmedIds, corrections } = review;
   const current =
@@ -35,6 +45,7 @@ function App() {
   const selectSection = (id: SectionId) => {
     setSection(id);
     setReviewingId(null);
+    setCompanyId(null);
   };
   // After deciding on an invoice, go back to the list.
   const confirm = (id: string) => {
@@ -90,6 +101,7 @@ function App() {
                   filters={filters}
                   onChange={updateFilters}
                   showStatus
+                  showClient
                 />
                 <InvoiceTable
                   invoices={visibleIncoming}
@@ -98,7 +110,7 @@ function App() {
                       ? noMatchText
                       : "Svi računi su pregledani."
                   }
-                  confirmed={false}
+                  confirmedIds={confirmedIds}
                   onReview={setReviewingId}
                 />
               </Stack>
@@ -110,6 +122,7 @@ function App() {
                   filters={filters}
                   onChange={updateFilters}
                   showStatus={false}
+                  showClient
                 />
                 <InvoiceTable
                   invoices={visibleConfirmed}
@@ -118,14 +131,32 @@ function App() {
                       ? noMatchText
                       : "Još nema potvrđenih računa."
                   }
-                  confirmed
+                  confirmedIds={confirmedIds}
                   onReview={setReviewingId}
                 />
               </Stack>
             )}
-            {section === "companies" && (
-              <CompanyTable incoming={incoming} confirmed={confirmed} />
-            )}
+            {section === "companies" &&
+              (companyId ? (
+                <CompanyInvoices
+                  invoices={invoices.filter(
+                    (invoice) => invoice.client.id === companyId,
+                  )}
+                  confirmedIds={confirmedIds}
+                  filters={companyFilters}
+                  onFiltersChange={(changes) =>
+                    setCompanyFilters((current) => ({ ...current, ...changes }))
+                  }
+                  onBack={() => setCompanyId(null)}
+                  onReview={setReviewingId}
+                />
+              ) : (
+                <CompanyTable
+                  incoming={incoming}
+                  confirmed={confirmed}
+                  onOpen={openCompany}
+                />
+              ))}
           </>
         )}
       </Box>

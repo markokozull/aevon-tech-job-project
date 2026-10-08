@@ -1,0 +1,88 @@
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import {
+  hasActiveFilters,
+  matchesFilters,
+  type InvoiceFilters,
+} from "../invoices/filters";
+import InvoiceFilterBar from "../invoices/InvoiceFilterBar";
+import InvoiceTable from "../invoices/InvoiceTable";
+import type { Invoice } from "../invoices/types";
+
+type Props = {
+  // All of the firm's invoices, pending and confirmed.
+  invoices: Invoice[];
+  confirmedIds: ReadonlySet<string>;
+  filters: InvoiceFilters;
+  onFiltersChange: (changes: Partial<InvoiceFilters>) => void;
+  onBack: () => void;
+  onReview: (id: string) => void;
+};
+
+// One firm's invoices in one place, e.g. to close a month for that firm.
+function CompanyInvoices({
+  invoices,
+  confirmedIds,
+  filters,
+  onFiltersChange,
+  onBack,
+  onReview,
+}: Props) {
+  const client = invoices[0]?.client;
+  const confirmedCount = invoices.filter((invoice) =>
+    confirmedIds.has(invoice.id),
+  ).length;
+  // Status and firm aren't offered here, so only month and search apply.
+  const visible = invoices.filter((invoice) =>
+    matchesFilters(invoice, { ...filters, status: "all", clientId: null }),
+  );
+
+  return (
+    <Stack spacing={2}>
+      <Box>
+        <Button startIcon={<ArrowBackIcon />} onClick={onBack}>
+          Natrag na firme
+        </Button>
+      </Box>
+
+      {client && (
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {client.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {[
+              `ID broj ${client.taxId}`,
+              `${invoices.length - confirmedCount} na čekanju`,
+              `${confirmedCount} potvrđeno`,
+            ].join(" · ")}
+          </Typography>
+        </Box>
+      )}
+
+      <InvoiceFilterBar
+        invoices={invoices}
+        filters={filters}
+        onChange={onFiltersChange}
+        showStatus={false}
+        showClient={false}
+      />
+
+      <InvoiceTable
+        invoices={visible}
+        emptyText={
+          hasActiveFilters({ ...filters, status: "all", clientId: null })
+            ? "Nijedan račun ne odgovara filterima."
+            : "Ova firma nema računa."
+        }
+        confirmedIds={confirmedIds}
+        onReview={onReview}
+      />
+    </Stack>
+  );
+}
+
+export default CompanyInvoices;

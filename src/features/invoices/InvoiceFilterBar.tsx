@@ -23,19 +23,29 @@ type Props = {
   onChange: (changes: Partial<InvoiceFilters>) => void;
   // Status only makes sense for invoices still waiting for review.
   showStatus: boolean;
+  // Hidden where the firm is already chosen (a firm's own invoice list).
+  showClient: boolean;
 };
 
-function InvoiceFilterBar({ invoices, filters, onChange, showStatus }: Props) {
+function InvoiceFilterBar({
+  invoices,
+  filters,
+  onChange,
+  showStatus,
+  showClient,
+}: Props) {
   const clients = [
     ...new Map(invoices.map(({ client }) => [client.id, client])).values(),
   ].sort((a, b) => a.name.localeCompare(b.name, "hr"));
   const months = [
     ...new Set(invoices.map(monthOf).filter((month) => month !== null)),
   ].sort((a, b) => b.localeCompare(a));
-  // Where status isn't shown, a status set on the other list doesn't count.
-  const active = hasActiveFilters(
-    showStatus ? filters : { ...filters, status: "all" },
-  );
+  // Filters that aren't shown here don't count as active.
+  const active = hasActiveFilters({
+    ...filters,
+    status: showStatus ? filters.status : "all",
+    clientId: showClient ? filters.clientId : null,
+  });
   // Status counts follow the other filters, so they match what you'll see.
   const forStatusCounts = invoices.filter((invoice) =>
     matchesFilters(invoice, { ...filters, status: "all" }),
@@ -78,18 +88,22 @@ function InvoiceFilterBar({ invoices, filters, onChange, showStatus }: Props) {
           }}
         />
 
-        <Autocomplete
-          size="small"
-          options={clients}
-          value={clients.find((client) => client.id === filters.clientId) ?? null}
-          onChange={(_, client) => onChange({ clientId: client?.id ?? null })}
-          getOptionLabel={(client) => client.name}
-          isOptionEqualToValue={(option, value) => option.id === value.id}
-          sx={{ width: 250 }}
-          renderInput={(params) => (
-            <TextField {...params} placeholder="Sve firme" />
-          )}
-        />
+        {showClient && (
+          <Autocomplete
+            size="small"
+            options={clients}
+            value={
+              clients.find((client) => client.id === filters.clientId) ?? null
+            }
+            onChange={(_, client) => onChange({ clientId: client?.id ?? null })}
+            getOptionLabel={(client) => client.name}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            sx={{ width: 250 }}
+            renderInput={(params) => (
+              <TextField {...params} placeholder="Sve firme" />
+            )}
+          />
+        )}
 
         <TextField
           select

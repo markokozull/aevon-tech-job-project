@@ -1,3 +1,4 @@
+import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -35,9 +36,10 @@ function toCompanyRows(incoming: Invoice[], confirmed: Invoice[]) {
 type Props = {
   incoming: Invoice[];
   confirmed: Invoice[];
+  onOpen: (clientId: string) => void;
 };
 
-function CompanyTable({ incoming, confirmed }: Props) {
+function CompanyTable({ incoming, confirmed, onOpen }: Props) {
   const rows = toCompanyRows(incoming, confirmed);
 
   return (
@@ -53,8 +55,23 @@ function CompanyTable({ incoming, confirmed }: Props) {
         </TableHead>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} hover>
-              <TableCell>{row.name}</TableCell>
+            <TableRow
+              key={row.id}
+              hover
+              onClick={() => onOpen(row.id)}
+              sx={{ cursor: "pointer" }}
+            >
+              <TableCell>
+                {/* A real button, so the row also opens from the keyboard;
+                    its click bubbles up to the row's handler. */}
+                <Link
+                  component="button"
+                  underline="hover"
+                  sx={{ fontWeight: 600 }}
+                >
+                  {row.name}
+                </Link>
+              </TableCell>
               <TableCell>{row.taxId}</TableCell>
               <TableCell align="right">{row.pending}</TableCell>
               <TableCell align="right">{row.confirmed}</TableCell>

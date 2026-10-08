@@ -43,11 +43,12 @@ function StatusChip({ confirmed, issues }: { confirmed: boolean; issues: Issue[]
 type Props = {
   invoices: Invoice[];
   emptyText: string;
-  confirmed: boolean;
+  // Per row, so one table can mix pending and confirmed invoices.
+  confirmedIds: ReadonlySet<string>;
   onReview: (id: string) => void;
 };
 
-function InvoiceTable({ invoices, emptyText, confirmed, onReview }: Props) {
+function InvoiceTable({ invoices, emptyText, confirmedIds, onReview }: Props) {
   return (
     <TableContainer component={Paper} variant="outlined">
       <Table size="small">
@@ -91,7 +92,7 @@ function InvoiceTable({ invoices, emptyText, confirmed, onReview }: Props) {
                   {formatAmount(fields.totalAmount.value, fields.currency.value)}
                 </TableCell>
                 <TableCell>
-                  <StatusChip confirmed={confirmed} issues={issues} />
+                  <StatusChip confirmed={confirmedIds.has(id)} issues={issues} />
                 </TableCell>
                 <TableCell align="right">
                   <Button size="small" variant="outlined" onClick={() => onReview(id)}>
