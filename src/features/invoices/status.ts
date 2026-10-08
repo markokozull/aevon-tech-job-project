@@ -220,3 +220,13 @@ export function findIssues(invoice: Invoice): Issue[] {
 
   return [...issues, ...findLineItemIssues(invoice)];
 }
+
+// Status filter on the incoming list. Uses the same checks as the chip in
+// each row, so a filter and the chips can never disagree.
+export type StatusFilter = "all" | "flagged" | "clean";
+
+export function matchesStatus(invoice: Invoice, filter: StatusFilter) {
+  if (filter === "all") return true;
+  const flagged = findIssues(invoice).length > 0;
+  return filter === "flagged" ? flagged : !flagged;
+}

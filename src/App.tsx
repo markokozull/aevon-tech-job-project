@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { ToastContainer } from "react-toastify";
 import Sidebar from "./components/Sidebar";
@@ -8,6 +9,11 @@ import InvoiceReview from "./features/invoices/InvoiceReview";
 import InvoiceTable from "./features/invoices/InvoiceTable";
 import { applyCorrections } from "./features/invoices/corrections";
 import { invoices as extracted } from "./features/invoices/data";
+import StatusFilterBar from "./features/invoices/StatusFilterBar";
+import {
+  matchesStatus,
+  type StatusFilter,
+} from "./features/invoices/status";
 import { useReviewState } from "./features/invoices/useReviewState";
 import { NAV_ITEMS, type SectionId } from "./navigation";
 
@@ -15,6 +21,7 @@ function App() {
   const [section, setSection] = useState<SectionId>("incoming");
   // Invoice open for review; null shows the list.
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const review = useReviewState();
   const { confirmedIds, corrections } = review;
   const current =
@@ -41,6 +48,9 @@ function App() {
   const incoming = invoices.filter((invoice) => !confirmedIds.has(invoice.id));
   const confirmed = invoices.filter((invoice) => confirmedIds.has(invoice.id));
   const reviewing = invoices.find((invoice) => invoice.id === reviewingId);
+  const visibleIncoming = incoming.filter((invoice) =>
+    matchesStatus(invoice, statusFilter),
+  );
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -64,12 +74,25 @@ function App() {
         ) : (
           <>
             {section === "incoming" && (
-              <InvoiceTable
-                invoices={incoming}
-                emptyText="Svi računi su pregledani."
-                confirmed={false}
-                onReview={setReviewingId}
-              />
+              <Stack spacing={2}>
+                <Box>
+                  <StatusFilterBar
+                    invoices={incoming}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                  />
+                </Box>
+                <InvoiceTable
+                  invoices={visibleIncoming}
+                  emptyText={
+                    statusFilter === "all"
+                      ? "Svi računi su pregledani."
+                      : "Nijedan račun ne odgovara filteru."
+                  }
+                  confirmed={false}
+                  onReview={setReviewingId}
+                />
+              </Stack>
             )}
             {section === "confirmed" && (
               <InvoiceTable
