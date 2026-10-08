@@ -6,30 +6,28 @@ import CompanyTable from "./features/companies/CompanyTable";
 import InvoiceReview from "./features/invoices/InvoiceReview";
 import InvoiceTable from "./features/invoices/InvoiceTable";
 import { invoices } from "./features/invoices/data";
+import { useReviewState } from "./features/invoices/useReviewState";
 import { NAV_ITEMS, type SectionId } from "./navigation";
 
 function App() {
   const [section, setSection] = useState<SectionId>("incoming");
   // Invoice open for review; null shows the list.
   const [reviewingId, setReviewingId] = useState<string | null>(null);
-  // IDs of invoices the accountant has confirmed. In-memory only for now.
-  const [confirmedIds, setConfirmedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const review = useReviewState();
+  const { confirmedIds } = review;
   const current = NAV_ITEMS.find((item) => item.id === section)!;
 
   const selectSection = (id: SectionId) => {
     setSection(id);
     setReviewingId(null);
   };
+  // After deciding on an invoice, go back to the list.
   const confirm = (id: string) => {
-    setConfirmedIds((ids) => new Set(ids).add(id));
+    review.confirm(id);
     setReviewingId(null);
   };
   const undo = (id: string) => {
-    setConfirmedIds((ids) => {
-      const next = new Set(ids);
-      next.delete(id);
-      return next;
-    });
+    review.undo(id);
     setReviewingId(null);
   };
 
