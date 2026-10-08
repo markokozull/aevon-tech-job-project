@@ -1,4 +1,5 @@
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
@@ -59,9 +60,10 @@ type Props = {
   invoices: Invoice[];
   emptyText: string;
   confirmed: boolean;
+  onReview: (id: string) => void;
 };
 
-function InvoiceTable({ invoices, emptyText, confirmed }: Props) {
+function InvoiceTable({ invoices, emptyText, confirmed, onReview }: Props) {
   return (
     <TableContainer component={Paper} variant="outlined">
       <Table size="small">
@@ -72,12 +74,13 @@ function InvoiceTable({ invoices, emptyText, confirmed }: Props) {
             <TableCell>Datum izdavanja</TableCell>
             <TableCell align="right">Ukupno</TableCell>
             <TableCell>Status</TableCell>
+            <TableCell align="right" />
           </TableRow>
         </TableHead>
         <TableBody>
           {invoices.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ py: 6, color: "text.secondary" }}>
+              <TableCell colSpan={6} align="center" sx={{ py: 6, color: "text.secondary" }}>
                 {emptyText}
               </TableCell>
             </TableRow>
@@ -105,6 +108,11 @@ function InvoiceTable({ invoices, emptyText, confirmed }: Props) {
                 </TableCell>
                 <TableCell>
                   <StatusChip confirmed={confirmed} issues={issues} />
+                </TableCell>
+                <TableCell align="right">
+                  <Button size="small" variant="outlined" onClick={() => onReview(id)}>
+                    Pregledaj
+                  </Button>
                 </TableCell>
               </TableRow>
             );
