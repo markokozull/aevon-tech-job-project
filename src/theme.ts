@@ -18,6 +18,36 @@ const theme = createTheme({
     button: { textTransform: 'none', fontWeight: 600, letterSpacing: 0 },
   },
   components: {
+    MuiTableCell: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderColor: theme.palette.divider,
+          paddingTop: 10,
+          paddingBottom: 10,
+        }),
+        head: ({ theme }) => ({
+          backgroundColor: theme.palette.background.default,
+          color: theme.palette.text.secondary,
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          whiteSpace: 'nowrap',
+        }),
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '&:last-child td': { borderBottom: 0 },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { fontWeight: 600 },
+      },
+    },
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
