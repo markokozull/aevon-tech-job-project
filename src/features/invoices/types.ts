@@ -4,6 +4,9 @@
 export type Extracted<T> = {
   value: T | null;
   confidence: number;
+  // Not in the JSON: set when the accountant corrected the value, and holds
+  // what the system originally read.
+  correctedFrom?: Extracted<T>;
 };
 
 export type InvoiceFields = {
