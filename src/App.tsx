@@ -9,11 +9,13 @@ import InvoiceReview from "./features/invoices/InvoiceReview";
 import InvoiceTable from "./features/invoices/InvoiceTable";
 import { applyCorrections } from "./features/invoices/corrections";
 import { invoices as extracted } from "./features/invoices/data";
-import StatusFilterBar from "./features/invoices/StatusFilterBar";
 import {
-  matchesStatus,
-  type StatusFilter,
-} from "./features/invoices/status";
+  hasActiveFilters,
+  matchesFilters,
+  NO_FILTERS,
+  type InvoiceFilters,
+} from "./features/invoices/filters";
+import InvoiceFilterBar from "./features/invoices/InvoiceFilterBar";
 import { useReviewState } from "./features/invoices/useReviewState";
 import { NAV_ITEMS, type SectionId } from "./navigation";
 
@@ -21,7 +23,10 @@ function App() {
   const [section, setSection] = useState<SectionId>("incoming");
   // Invoice open for review; null shows the list.
   const [reviewingId, setReviewingId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  // Kept here, not in the list, so they survive opening an invoice.
+  const [filters, setFilters] = useState<InvoiceFilters>(NO_FILTERS);
+  const updateFilters = (changes: Partial<InvoiceFilters>) =>
+    setFilters((current) => ({ ...current, ...changes }));
   const review = useReviewState();
   const { confirmedIds, corrections } = review;
   const current =
@@ -49,8 +54,13 @@ function App() {
   const confirmed = invoices.filter((invoice) => confirmedIds.has(invoice.id));
   const reviewing = invoices.find((invoice) => invoice.id === reviewingId);
   const visibleIncoming = incoming.filter((invoice) =>
-    matchesStatus(invoice, statusFilter),
+    matchesFilters(invoice, filters),
   );
+  // Confirmed invoices have no review status to filter by.
+  const visibleConfirmed = confirmed.filter((invoice) =>
+    matchesFilters(invoice, { ...filters, status: "all" }),
+  );
+  const noMatchText = "Nijedan račun ne odgovara filterima.";
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -75,19 +85,18 @@ function App() {
           <>
             {section === "incoming" && (
               <Stack spacing={2}>
-                <Box>
-                  <StatusFilterBar
-                    invoices={incoming}
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                  />
-                </Box>
+                <InvoiceFilterBar
+                  invoices={incoming}
+                  filters={filters}
+                  onChange={updateFilters}
+                  showStatus
+                />
                 <InvoiceTable
                   invoices={visibleIncoming}
                   emptyText={
-                    statusFilter === "all"
-                      ? "Svi računi su pregledani."
-                      : "Nijedan račun ne odgovara filteru."
+                    hasActiveFilters(filters)
+                      ? noMatchText
+                      : "Svi računi su pregledani."
                   }
                   confirmed={false}
                   onReview={setReviewingId}
@@ -95,12 +104,24 @@ function App() {
               </Stack>
             )}
             {section === "confirmed" && (
-              <InvoiceTable
-                invoices={confirmed}
-                emptyText="Još nema potvrđenih računa."
-                confirmed
-                onReview={setReviewingId}
-              />
+              <Stack spacing={2}>
+                <InvoiceFilterBar
+                  invoices={confirmed}
+                  filters={filters}
+                  onChange={updateFilters}
+                  showStatus={false}
+                />
+                <InvoiceTable
+                  invoices={visibleConfirmed}
+                  emptyText={
+                    confirmed.length > 0
+                      ? noMatchText
+                      : "Još nema potvrđenih računa."
+                  }
+                  confirmed
+                  onReview={setReviewingId}
+                />
+              </Stack>
             )}
             {section === "companies" && (
               <CompanyTable incoming={incoming} confirmed={confirmed} />
