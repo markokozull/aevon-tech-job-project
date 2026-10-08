@@ -57,8 +57,8 @@ function InvoiceReview({ invoice, confirmed, onBack, onConfirm, onUndo }: Props)
           {issues.length > 0 && (
             <Alert severity="warning" sx={{ mt: 2 }}>
               <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                {issues.map((issue) => (
-                  <li key={issue}>{issue}</li>
+                {issues.map(({ message }) => (
+                  <li key={message}>{message}</li>
                 ))}
               </Box>
             </Alert>

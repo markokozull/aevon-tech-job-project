@@ -10,27 +10,11 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { findIssues } from "./status";
+import { formatAmount, formatDate, MISSING } from "./format";
+import { findIssues, type Issue } from "./status";
 import type { Invoice } from "./types";
 
-const MISSING = "—";
-
-function formatDate(iso: string | null) {
-  if (!iso) return MISSING;
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? iso : date.toLocaleDateString("hr-HR");
-}
-
-function formatAmount(amount: number | null, currency: string | null) {
-  if (amount === null) return MISSING;
-  const formatted = amount.toLocaleString("hr-HR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return currency ? `${formatted} ${currency}` : formatted;
-}
-
-function StatusChip({ confirmed, issues }: { confirmed: boolean; issues: string[] }) {
+function StatusChip({ confirmed, issues }: { confirmed: boolean; issues: Issue[] }) {
   if (confirmed) return <Chip size="small" color="success" label="Potvrđeno" />;
   // No green "ready" chip: passing the automatic checks doesn't make an
   // invoice correct, it only means nothing was flagged.
@@ -45,8 +29,8 @@ function StatusChip({ confirmed, issues }: { confirmed: boolean; issues: string[
     <Tooltip
       title={
         <Box component="ul" sx={{ m: 0, pl: 2 }}>
-          {issues.map((issue) => (
-            <li key={issue}>{issue}</li>
+          {issues.map(({ message }) => (
+            <li key={message}>{message}</li>
           ))}
         </Box>
       }
