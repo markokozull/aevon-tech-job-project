@@ -1,4 +1,10 @@
-import type { Extracted, Invoice, InvoiceFields, LineItem } from "./types";
+import type {
+  Extracted,
+  FieldKey,
+  Invoice,
+  InvoiceFields,
+  LineItem,
+} from "./types";
 
 // Below this the extraction is treated as a guess the accountant must check.
 // Placeholder value: should be tuned against how often real errors slip through.
@@ -37,6 +43,10 @@ export const FIELD_LABELS: Record<keyof InvoiceFields, string> = {
   paymentReference: "Poziv na broj",
   bankAccounts: "Žiro račun",
 };
+
+// Every header field. Safe cast: FIELD_LABELS is a Record over exactly
+// FieldKey, so its keys are all the fields and nothing else.
+export const FIELD_KEYS = Object.keys(FIELD_LABELS) as FieldKey[];
 
 export const LINE_FIELD_LABELS: Record<keyof LineItem, string> = {
   description: "Opis",
@@ -129,7 +139,7 @@ export function findIssues(invoice: Invoice): Issue[] {
     }
   }
 
-  for (const key of Object.keys(fields) as (keyof InvoiceFields)[]) {
+  for (const key of FIELD_KEYS) {
     if (isUncertain(fields[key])) {
       issues.push({ target: key, message: `Nesigurno: ${FIELD_LABELS[key]}` });
     }

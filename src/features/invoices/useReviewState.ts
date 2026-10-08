@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import type { Corrections, FieldKey, FieldValue } from "./corrections";
+import { isFieldValue, type Corrections } from "./corrections";
+import { FIELD_KEYS } from "./status";
+import type { FieldKey, FieldValue } from "./types";
 
 // What the accountant has decided, kept apart from the extracted data in
 // invoices.json. Saved to localStorage so a reload doesn't lose the work.
@@ -29,10 +31,26 @@ const parseIds = (saved: unknown) =>
     Array.isArray(saved) ? saved.filter((id) => typeof id === "string") : [],
   );
 
-const parseCorrections = (saved: unknown) =>
-  typeof saved === "object" && saved !== null && !Array.isArray(saved)
-    ? (saved as Corrections)
-    : {};
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// Keeps only entries that are real fields with a valid value; anything else
+// (an old format, a hand-edited value) is dropped instead of reaching the UI.
+function parseCorrections(saved: unknown): Corrections {
+  if (!isRecord(saved)) return {};
+  const corrections: Corrections = {};
+  for (const [invoiceId, fields] of Object.entries(saved)) {
+    if (!isRecord(fields)) continue;
+    const valid: Corrections[string] = {};
+    for (const key of FIELD_KEYS) {
+      const value = fields[key];
+      if (key in fields && isFieldValue(value)) valid[key] = value;
+    }
+    corrections[invoiceId] = valid;
+  }
+  return corrections;
+}
 
 export function useReviewState() {
   const [confirmedIds, setConfirmedIds] = useState<ReadonlySet<string>>(() =>

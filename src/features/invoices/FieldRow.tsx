@@ -13,13 +13,11 @@ import {
   parseFieldInput,
   sameValue,
   toInputText,
-  type FieldKey,
-  type FieldValue,
 } from "./corrections";
 import { fieldKind, formatFieldValue, MISSING } from "./format";
 import { FIELD_LABELS, isUncertain } from "./status";
 import { flaggedBackground } from "./styles";
-import type { Extracted } from "./types";
+import type { Extracted, FieldKey, FieldValue } from "./types";
 
 // One line of body2 text, and the row's vertical padding. The edit input
 // is exactly LINE_HEIGHT + 2 * ROW_PADDING tall, so it fits the same row.
@@ -52,7 +50,7 @@ function FieldRow({
   const valueRef = useRef<HTMLDivElement>(null);
 
   const startEditing = () => {
-    setDraft(toInputText(fieldKey, field.value));
+    setDraft(toInputText(field.value));
     setError(null);
   };
 

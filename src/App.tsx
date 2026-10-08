@@ -16,7 +16,8 @@ function App() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const review = useReviewState();
   const { confirmedIds, corrections } = review;
-  const current = NAV_ITEMS.find((item) => item.id === section)!;
+  const current =
+    NAV_ITEMS.find((item) => item.id === section) ?? NAV_ITEMS[0];
 
   const selectSection = (id: SectionId) => {
     setSection(id);

@@ -1,8 +1,6 @@
 import { fieldKind } from "./format";
-import type { Invoice, InvoiceFields } from "./types";
-
-export type FieldKey = keyof InvoiceFields;
-export type FieldValue = InvoiceFields[FieldKey]["value"];
+import { FIELD_KEYS } from "./status";
+import type { FieldKey, FieldValue, Invoice } from "./types";
 
 // Values the accountant typed in, per invoice ID and field. Kept apart from
 // the extracted data so it's always clear what the system read and what a
@@ -18,27 +16,26 @@ export function applyCorrections(
 ): Invoice {
   if (!corrections) return invoice;
   const fields = { ...invoice.fields };
-  for (const [key, value] of Object.entries(corrections)) {
-    const extracted = invoice.fields[key as FieldKey];
+  for (const key of FIELD_KEYS) {
+    if (!(key in corrections)) continue;
     // A person entered it, so it's no longer a guess: confidence 1.
     Object.assign(fields, {
-      [key]: { value, confidence: 1, correctedFrom: extracted },
+      [key]: {
+        value: corrections[key],
+        confidence: 1,
+        correctedFrom: invoice.fields[key],
+      },
     });
   }
   return { ...invoice, fields };
 }
 
 // Text shown in the input when editing starts.
-export function toInputText(key: FieldKey, value: FieldValue) {
+export function toInputText(value: FieldValue) {
   if (value === null) return "";
-  switch (fieldKind(key)) {
-    case "amount":
-      return (value as number).toFixed(2).replace(".", ",");
-    case "list":
-      return (value as string[]).join("\n");
-    default:
-      return String(value);
-  }
+  if (Array.isArray(value)) return value.join("\n");
+  if (typeof value === "number") return value.toFixed(2).replace(".", ",");
+  return value;
 }
 
 export type ParseResult =
@@ -94,4 +91,14 @@ export function parseFieldInput(key: FieldKey, text: string): ParseResult {
 
 export function sameValue(a: FieldValue, b: FieldValue) {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// Checks a saved correction before trusting it (it comes from localStorage).
+export function isFieldValue(value: unknown): value is FieldValue {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    (typeof value === "number" && Number.isFinite(value)) ||
+    (Array.isArray(value) && value.every((item) => typeof item === "string"))
+  );
 }

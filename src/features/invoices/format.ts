@@ -1,4 +1,4 @@
-import type { InvoiceFields } from "./types";
+import type { FieldKey, FieldValue } from "./types";
 
 export const MISSING = "—";
 
@@ -25,7 +25,7 @@ export function formatAmount(amount: number | null, currency: string | null) {
 // How a field is displayed and edited.
 export type FieldKind = "date" | "amount" | "currency" | "list" | "text";
 
-export function fieldKind(key: keyof InvoiceFields): FieldKind {
+export function fieldKind(key: FieldKey): FieldKind {
   switch (key) {
     case "issueDate":
     case "supplyDate":
@@ -44,19 +44,10 @@ export function fieldKind(key: keyof InvoiceFields): FieldKind {
   }
 }
 
-export function formatFieldValue(
-  key: keyof InvoiceFields,
-  value: InvoiceFields[keyof InvoiceFields]["value"],
-) {
+export function formatFieldValue(key: FieldKey, value: FieldValue) {
   if (value === null) return MISSING;
-  switch (fieldKind(key)) {
-    case "date":
-      return formatDate(value as string);
-    case "amount":
-      return formatNumber(value as number);
-    case "list":
-      return (value as string[]).join("\n");
-    default:
-      return String(value);
-  }
+  if (Array.isArray(value)) return value.join("\n");
+  // The only numeric header fields are amounts.
+  if (typeof value === "number") return formatNumber(value);
+  return fieldKind(key) === "date" ? formatDate(value) : value;
 }

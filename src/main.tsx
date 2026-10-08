@@ -10,7 +10,10 @@ import './index.css'
 import App from './App.tsx'
 import theme from './theme.ts'
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root')
+if (!root) throw new Error('Missing #root element in index.html')
+
+createRoot(root).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />

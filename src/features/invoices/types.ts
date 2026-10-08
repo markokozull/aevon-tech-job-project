@@ -52,3 +52,6 @@ export type Invoice = {
   fields: InvoiceFields;
   lineItems: LineItem[];
 };
+
+export type FieldKey = keyof InvoiceFields;
+export type FieldValue = InvoiceFields[FieldKey]["value"];

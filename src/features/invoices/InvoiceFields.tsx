@@ -12,7 +12,6 @@ import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { ReactNode } from "react";
-import type { FieldKey, FieldValue } from "./corrections";
 import FieldRow from "./FieldRow";
 import { formatNumber, MISSING } from "./format";
 import {
@@ -24,15 +23,16 @@ import {
 import { flaggedBackground } from "./styles";
 import type {
   Extracted,
+  FieldKey,
+  FieldValue,
   Invoice,
-  InvoiceFields as Fields,
   LineItem,
 } from "./types";
 
 // Fields that go into bookkeeping: always visible, in the order they
 // appear on a paper invoice. Which fields belong here is a guess to
 // confirm with a real accountant.
-const PRIMARY_GROUPS: { title: string; fields: (keyof Fields)[] }[] = [
+const PRIMARY_GROUPS: { title: string; fields: FieldKey[] }[] = [
   { title: "Dobavljač", fields: ["vendorName", "vendorTaxId"] },
   { title: "Račun", fields: ["invoiceNumber", "issueDate", "dueDate"] },
   {
@@ -42,7 +42,7 @@ const PRIMARY_GROUPS: { title: string; fields: (keyof Fields)[] }[] = [
 ];
 
 // Checked automatically or not needed for booking: collapsed unless one is flagged.
-const SECONDARY_FIELDS: (keyof Fields)[] = [
+const SECONDARY_FIELDS: FieldKey[] = [
   "buyerName",
   "buyerTaxId",
   "vendorVatId",
@@ -65,7 +65,7 @@ function FieldList({ invoice, keys, flagged, ...editing }: FieldListProps) {
     <FieldRow
       key={key}
       fieldKey={key}
-      field={invoice.fields[key] as Extracted<FieldValue>}
+      field={invoice.fields[key]}
       flagged={flagged.has(key)}
       editable={editing.editable}
       onCorrect={(value) => editing.onCorrect(key, value)}
@@ -186,8 +186,8 @@ type Props = {
 
 function InvoiceFields({ invoice, issues, ...editing }: Props) {
   const flagged = new Set(issues.map((issue) => issue.target));
-  const secondaryWarnings = issues.filter((issue) =>
-    SECONDARY_FIELDS.includes(issue.target as keyof Fields),
+  const secondaryWarnings = issues.filter(
+    ({ target }) => target !== "lineItems" && SECONDARY_FIELDS.includes(target),
   ).length;
   const lineItemWarnings = issues.filter(
     (issue) => issue.target === "lineItems",

@@ -5,11 +5,10 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import type { FieldKey, FieldValue } from "./corrections";
 import InvoiceFields from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
 import { findIssues } from "./status";
-import type { Invoice } from "./types";
+import type { FieldKey, FieldValue, Invoice } from "./types";
 
 // Both columns fill the screen below the page title and back button.
 const PANEL_HEIGHT = "calc(100vh - 170px)";
