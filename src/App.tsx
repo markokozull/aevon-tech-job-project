@@ -5,7 +5,8 @@ import Sidebar from "./components/Sidebar";
 import CompanyTable from "./features/companies/CompanyTable";
 import InvoiceReview from "./features/invoices/InvoiceReview";
 import InvoiceTable from "./features/invoices/InvoiceTable";
-import { invoices } from "./features/invoices/data";
+import { applyCorrections } from "./features/invoices/corrections";
+import { invoices as extracted } from "./features/invoices/data";
 import { useReviewState } from "./features/invoices/useReviewState";
 import { NAV_ITEMS, type SectionId } from "./navigation";
 
@@ -14,7 +15,7 @@ function App() {
   // Invoice open for review; null shows the list.
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const review = useReviewState();
-  const { confirmedIds } = review;
+  const { confirmedIds, corrections } = review;
   const current = NAV_ITEMS.find((item) => item.id === section)!;
 
   const selectSection = (id: SectionId) => {
@@ -31,6 +32,10 @@ function App() {
     setReviewingId(null);
   };
 
+  // Everything below sees the invoices with the accountant's corrections.
+  const invoices = extracted.map((invoice) =>
+    applyCorrections(invoice, corrections[invoice.id]),
+  );
   const incoming = invoices.filter((invoice) => !confirmedIds.has(invoice.id));
   const confirmed = invoices.filter((invoice) => confirmedIds.has(invoice.id));
   const reviewing = invoices.find((invoice) => invoice.id === reviewingId);
@@ -49,6 +54,8 @@ function App() {
             onBack={() => setReviewingId(null)}
             onConfirm={confirm}
             onUndo={undo}
+            onCorrect={review.correct}
+            onRevert={review.revert}
           />
         ) : (
           <>

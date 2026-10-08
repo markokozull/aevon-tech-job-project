@@ -5,6 +5,7 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import type { FieldKey, FieldValue } from "./corrections";
 import InvoiceFields from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
 import { findIssues } from "./status";
@@ -19,6 +20,8 @@ type Props = {
   onBack: () => void;
   onConfirm: (id: string) => void;
   onUndo: (id: string) => void;
+  onCorrect: (id: string, key: FieldKey, value: FieldValue) => void;
+  onRevert: (id: string, key: FieldKey) => void;
 };
 
 // Review screen: the original on the left, what was extracted and the
@@ -29,6 +32,8 @@ function InvoiceReview({
   onBack,
   onConfirm,
   onUndo,
+  onCorrect,
+  onRevert,
 }: Props) {
   const { id, client, fields } = invoice;
   const issues = findIssues(invoice);
@@ -88,7 +93,13 @@ function InvoiceReview({
             )}
 
             <Box sx={{ mt: 2 }}>
-              <InvoiceFields invoice={invoice} issues={issues} />
+              <InvoiceFields
+                invoice={invoice}
+                issues={issues}
+                editable={!confirmed}
+                onCorrect={(key, value) => onCorrect(id, key, value)}
+                onRevert={(key) => onRevert(id, key)}
+              />
             </Box>
           </Box>
 

@@ -10,17 +10,18 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
-import { alpha, type Theme } from "@mui/material/styles";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { ReactNode } from "react";
-import { formatDate, formatNumber, MISSING } from "./format";
+import type { FieldKey, FieldValue } from "./corrections";
+import FieldRow from "./FieldRow";
+import { formatNumber, MISSING } from "./format";
 import {
-  FIELD_LABELS,
   LINE_FIELD_LABELS,
   isUncertain,
   type Issue,
   type IssueTarget,
 } from "./status";
+import { flaggedBackground } from "./styles";
 import type {
   Extracted,
   Invoice,
@@ -50,95 +51,27 @@ const SECONDARY_FIELDS: (keyof Fields)[] = [
   "bankAccounts",
 ];
 
-const DATE_FIELDS: (keyof Fields)[] = ["issueDate", "supplyDate", "dueDate"];
-const AMOUNT_FIELDS: (keyof Fields)[] = [
-  "netAmount",
-  "vatAmount",
-  "totalAmount",
-];
-
-function formatField(key: keyof Fields, value: unknown) {
-  if (value === null) return null;
-  if (DATE_FIELDS.includes(key)) return formatDate(value as string);
-  if (AMOUNT_FIELDS.includes(key)) return formatNumber(value as number);
-  if (Array.isArray(value)) return value.join("\n");
-  return String(value);
-}
-
-const flaggedBackground = {
-  bgcolor: (theme: Theme) => alpha(theme.palette.warning.main, 0.12),
-};
-
-type FieldRowProps = {
-  label: string;
-  field: Extracted<unknown>;
-  flagged: boolean;
-};
-
-function FieldRow({ label, field, flagged }: FieldRowProps) {
-  return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: "140px minmax(0, 1fr)",
-        gap: 1,
-        px: 1,
-        py: 0.75,
-        borderRadius: 1,
-        ...(flagged && flaggedBackground),
-      }}
-    >
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-      <Box>
-        {field.value === null ? (
-          <Typography
-            variant="body2"
-            color={flagged ? "warning.dark" : "text.secondary"}
-          >
-            {flagged ? "Nedostaje" : MISSING}
-          </Typography>
-        ) : (
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 500,
-              whiteSpace: "pre-line",
-              wordBreak: "break-word",
-            }}
-          >
-            {field.value as string}
-          </Typography>
-        )}
-        {isUncertain(field) && (
-          <Typography variant="caption" color="warning.dark">
-            Sigurnost {Math.round(field.confidence * 100)} %
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  );
-}
-
 type FieldListProps = {
   invoice: Invoice;
-  keys: (keyof Fields)[];
+  keys: FieldKey[];
   flagged: Set<IssueTarget>;
+  editable: boolean;
+  onCorrect: (key: FieldKey, value: FieldValue) => void;
+  onRevert: (key: FieldKey) => void;
 };
 
-function FieldList({ invoice, keys, flagged }: FieldListProps) {
-  return keys.map((key) => {
-    const field = invoice.fields[key];
-    return (
-      <FieldRow
-        key={key}
-        label={FIELD_LABELS[key]}
-        field={{ ...field, value: formatField(key, field.value) }}
-        flagged={flagged.has(key)}
-      />
-    );
-  });
+function FieldList({ invoice, keys, flagged, ...editing }: FieldListProps) {
+  return keys.map((key) => (
+    <FieldRow
+      key={key}
+      fieldKey={key}
+      field={invoice.fields[key] as Extracted<FieldValue>}
+      flagged={flagged.has(key)}
+      editable={editing.editable}
+      onCorrect={(value) => editing.onCorrect(key, value)}
+      onRevert={() => editing.onRevert(key)}
+    />
+  ));
 }
 
 function LineItemsTable({ items }: { items: LineItem[] }) {
@@ -245,9 +178,13 @@ function Section({
 type Props = {
   invoice: Invoice;
   issues: Issue[];
+  // Confirmed invoices are read-only; they have to be moved back first.
+  editable: boolean;
+  onCorrect: (key: FieldKey, value: FieldValue) => void;
+  onRevert: (key: FieldKey) => void;
 };
 
-function InvoiceFields({ invoice, issues }: Props) {
+function InvoiceFields({ invoice, issues, ...editing }: Props) {
   const flagged = new Set(issues.map((issue) => issue.target));
   const secondaryWarnings = issues.filter((issue) =>
     SECONDARY_FIELDS.includes(issue.target as keyof Fields),
@@ -267,7 +204,12 @@ function InvoiceFields({ invoice, issues }: Props) {
           >
             {group.title}
           </Typography>
-          <FieldList invoice={invoice} keys={group.fields} flagged={flagged} />
+          <FieldList
+            invoice={invoice}
+            keys={group.fields}
+            flagged={flagged}
+            {...editing}
+          />
         </Box>
       ))}
 
@@ -276,6 +218,7 @@ function InvoiceFields({ invoice, issues }: Props) {
           invoice={invoice}
           keys={SECONDARY_FIELDS}
           flagged={flagged}
+          {...editing}
         />
       </Section>
 
