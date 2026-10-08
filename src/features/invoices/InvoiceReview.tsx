@@ -16,6 +16,7 @@ import {
   toInputText,
   type Corrections,
 } from "./corrections";
+import ConfirmWarningsDialog from "./ConfirmWarningsDialog";
 import { formatAmount, formatDate } from "./format";
 import InvoiceFields, { type FieldForm } from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
@@ -52,6 +53,7 @@ function InvoiceReview({
   const [drafts, setDrafts] = useState<Partial<Record<FieldKey, string>>>(
     {},
   );
+  const [askingToConfirm, setAskingToConfirm] = useState(false);
 
   const savedText = (key: FieldKey) => toInputText(fields[key].value);
   const parsed = FIELD_KEYS.flatMap((key) => {
@@ -102,6 +104,12 @@ function InvoiceReview({
   const saveAndConfirm = () => {
     save();
     onConfirm(id);
+  };
+
+  // With warnings left, ask first; otherwise confirm straight away.
+  const requestConfirm = () => {
+    if (issues.length > 0) setAskingToConfirm(true);
+    else saveAndConfirm();
   };
 
   const back = () => {
@@ -206,7 +214,7 @@ function InvoiceReview({
                   size="large"
                   startIcon={<CheckIcon />}
                   disabled={hasErrors}
-                  onClick={saveAndConfirm}
+                  onClick={requestConfirm}
                 >
                   Potvrdi račun
                 </Button>
@@ -215,6 +223,13 @@ function InvoiceReview({
           </Stack>
         </Paper>
       </Box>
+
+      <ConfirmWarningsDialog
+        open={askingToConfirm}
+        issues={issues}
+        onCancel={() => setAskingToConfirm(false)}
+        onConfirm={saveAndConfirm}
+      />
     </Stack>
   );
 }
