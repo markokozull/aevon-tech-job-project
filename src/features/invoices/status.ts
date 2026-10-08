@@ -221,12 +221,19 @@ export function findIssues(invoice: Invoice): Issue[] {
   return [...issues, ...findLineItemIssues(invoice)];
 }
 
-// Status filter on the incoming list. Uses the same checks as the chip in
-// each row, so a filter and the chips can never disagree.
-export type StatusFilter = "all" | "flagged" | "clean";
+// Status filter on the invoice lists. Follows the chip in each row (a
+// confirmed row shows "Potvrđeno", not its warnings), so a filter and the
+// chips can never disagree.
+export type StatusFilter = "all" | "flagged" | "clean" | "confirmed";
 
-export function matchesStatus(invoice: Invoice, filter: StatusFilter) {
+export function matchesStatus(
+  invoice: Invoice,
+  filter: StatusFilter,
+  confirmed: boolean,
+) {
   if (filter === "all") return true;
+  if (filter === "confirmed") return confirmed;
+  if (confirmed) return false;
   const flagged = findIssues(invoice).length > 0;
   return filter === "flagged" ? flagged : !flagged;
 }

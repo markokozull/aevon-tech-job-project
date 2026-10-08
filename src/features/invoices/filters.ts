@@ -9,6 +9,14 @@ export type InvoiceFilters = {
   search: string;
 };
 
+// Status options per list: the incoming list has nothing confirmed, a
+// firm's list mixes both.
+export const INCOMING_STATUSES: StatusFilter[] = ["all", "flagged", "clean"];
+export const MIXED_STATUSES: StatusFilter[] = [
+  ...INCOMING_STATUSES,
+  "confirmed",
+];
+
 export const NO_FILTERS: InvoiceFilters = {
   status: "all",
   clientId: null,
@@ -58,9 +66,13 @@ function matchesSearch({ fields }: Invoice, search: string) {
   );
 }
 
-export function matchesFilters(invoice: Invoice, filters: InvoiceFilters) {
+export function matchesFilters(
+  invoice: Invoice,
+  filters: InvoiceFilters,
+  confirmedIds: ReadonlySet<string>,
+) {
   return (
-    matchesStatus(invoice, filters.status) &&
+    matchesStatus(invoice, filters.status, confirmedIds.has(invoice.id)) &&
     (filters.clientId === null || invoice.client.id === filters.clientId) &&
     (filters.month === null || monthOf(invoice) === filters.month) &&
     matchesSearch(invoice, filters.search)

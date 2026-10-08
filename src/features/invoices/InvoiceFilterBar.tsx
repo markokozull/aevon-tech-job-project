@@ -13,6 +13,7 @@ import {
   NO_FILTERS,
   type InvoiceFilters,
 } from "./filters";
+import type { StatusFilter } from "./status";
 import StatusFilterBar from "./StatusFilterBar";
 import type { Invoice } from "./types";
 
@@ -21,8 +22,9 @@ type Props = {
   invoices: Invoice[];
   filters: InvoiceFilters;
   onChange: (changes: Partial<InvoiceFilters>) => void;
-  // Status only makes sense for invoices still waiting for review.
-  showStatus: boolean;
+  confirmedIds: ReadonlySet<string>;
+  // Status options for this list; empty hides the status row.
+  statusOptions: StatusFilter[];
   // Hidden where the firm is already chosen (a firm's own invoice list).
   showClient: boolean;
 };
@@ -31,9 +33,11 @@ function InvoiceFilterBar({
   invoices,
   filters,
   onChange,
-  showStatus,
+  confirmedIds,
+  statusOptions,
   showClient,
 }: Props) {
+  const showStatus = statusOptions.length > 0;
   const clients = [
     ...new Map(invoices.map(({ client }) => [client.id, client])).values(),
   ].sort((a, b) => a.name.localeCompare(b.name, "hr"));
@@ -48,7 +52,7 @@ function InvoiceFilterBar({
   });
   // Status counts follow the other filters, so they match what you'll see.
   const forStatusCounts = invoices.filter((invoice) =>
-    matchesFilters(invoice, { ...filters, status: "all" }),
+    matchesFilters(invoice, { ...filters, status: "all" }, confirmedIds),
   );
 
   return (
@@ -58,6 +62,8 @@ function InvoiceFilterBar({
         <div>
           <StatusFilterBar
             invoices={forStatusCounts}
+            confirmedIds={confirmedIds}
+            options={statusOptions}
             value={filters.status}
             onChange={(status) => onChange({ status })}
           />

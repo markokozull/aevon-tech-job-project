@@ -6,6 +6,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import {
   hasActiveFilters,
   matchesFilters,
+  MIXED_STATUSES,
   type InvoiceFilters,
 } from "../invoices/filters";
 import InvoiceFilterBar from "../invoices/InvoiceFilterBar";
@@ -35,9 +36,10 @@ function CompanyInvoices({
   const confirmedCount = invoices.filter((invoice) =>
     confirmedIds.has(invoice.id),
   ).length;
-  // Status and firm aren't offered here, so only month and search apply.
+  // The firm is already chosen, so its filter doesn't apply here.
+  const ownFilters = { ...filters, clientId: null };
   const visible = invoices.filter((invoice) =>
-    matchesFilters(invoice, { ...filters, status: "all", clientId: null }),
+    matchesFilters(invoice, ownFilters, confirmedIds),
   );
 
   return (
@@ -67,18 +69,20 @@ function CompanyInvoices({
         invoices={invoices}
         filters={filters}
         onChange={onFiltersChange}
-        showStatus={false}
+        confirmedIds={confirmedIds}
+        statusOptions={MIXED_STATUSES}
         showClient={false}
       />
 
       <InvoiceTable
         invoices={visible}
         emptyText={
-          hasActiveFilters({ ...filters, status: "all", clientId: null })
+          hasActiveFilters(ownFilters)
             ? "Nijedan račun ne odgovara filterima."
             : "Ova firma nema računa."
         }
         confirmedIds={confirmedIds}
+        showClient={false}
         onReview={onReview}
       />
     </Stack>

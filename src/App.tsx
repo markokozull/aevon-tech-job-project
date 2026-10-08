@@ -12,6 +12,7 @@ import { applyCorrections } from "./features/invoices/corrections";
 import { invoices as extracted } from "./features/invoices/data";
 import {
   hasActiveFilters,
+  INCOMING_STATUSES,
   matchesFilters,
   NO_FILTERS,
   type InvoiceFilters,
@@ -65,11 +66,11 @@ function App() {
   const confirmed = invoices.filter((invoice) => confirmedIds.has(invoice.id));
   const reviewing = invoices.find((invoice) => invoice.id === reviewingId);
   const visibleIncoming = incoming.filter((invoice) =>
-    matchesFilters(invoice, filters),
+    matchesFilters(invoice, filters, confirmedIds),
   );
   // Confirmed invoices have no review status to filter by.
   const visibleConfirmed = confirmed.filter((invoice) =>
-    matchesFilters(invoice, { ...filters, status: "all" }),
+    matchesFilters(invoice, { ...filters, status: "all" }, confirmedIds),
   );
   const noMatchText = "Nijedan račun ne odgovara filterima.";
 
@@ -100,7 +101,8 @@ function App() {
                   invoices={incoming}
                   filters={filters}
                   onChange={updateFilters}
-                  showStatus
+                  confirmedIds={confirmedIds}
+                  statusOptions={INCOMING_STATUSES}
                   showClient
                 />
                 <InvoiceTable
@@ -111,6 +113,7 @@ function App() {
                       : "Svi računi su pregledani."
                   }
                   confirmedIds={confirmedIds}
+                  showClient
                   onReview={setReviewingId}
                 />
               </Stack>
@@ -121,7 +124,8 @@ function App() {
                   invoices={confirmed}
                   filters={filters}
                   onChange={updateFilters}
-                  showStatus={false}
+                  confirmedIds={confirmedIds}
+                  statusOptions={[]}
                   showClient
                 />
                 <InvoiceTable
@@ -132,6 +136,7 @@ function App() {
                       : "Još nema potvrđenih računa."
                   }
                   confirmedIds={confirmedIds}
+                  showClient
                   onReview={setReviewingId}
                 />
               </Stack>

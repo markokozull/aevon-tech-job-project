@@ -45,17 +45,26 @@ type Props = {
   emptyText: string;
   // Per row, so one table can mix pending and confirmed invoices.
   confirmedIds: ReadonlySet<string>;
+  // Off in a firm's own list, where every row has the same client.
+  showClient: boolean;
   onReview: (id: string) => void;
 };
 
-function InvoiceTable({ invoices, emptyText, confirmedIds, onReview }: Props) {
+function InvoiceTable({
+  invoices,
+  emptyText,
+  confirmedIds,
+  showClient,
+  onReview,
+}: Props) {
+  const columnCount = showClient ? 6 : 5;
   return (
     <TableContainer component={Paper} variant="outlined">
       <Table size="small">
         <TableHead>
           <TableRow>
             <TableCell>Dobavljač / broj računa</TableCell>
-            <TableCell>Klijent</TableCell>
+            {showClient && <TableCell>Klijent</TableCell>}
             <TableCell>Datum računa</TableCell>
             <TableCell align="right">Ukupno</TableCell>
             <TableCell>Status</TableCell>
@@ -65,7 +74,7 @@ function InvoiceTable({ invoices, emptyText, confirmedIds, onReview }: Props) {
         <TableBody>
           {invoices.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} align="center" sx={{ py: 6, color: "text.secondary" }}>
+              <TableCell colSpan={columnCount} align="center" sx={{ py: 6, color: "text.secondary" }}>
                 {emptyText}
               </TableCell>
             </TableRow>
@@ -83,7 +92,7 @@ function InvoiceTable({ invoices, emptyText, confirmedIds, onReview }: Props) {
                     {fields.invoiceNumber.value ?? "Broj računa nedostaje"}
                   </Typography>
                 </TableCell>
-                <TableCell>{client.name}</TableCell>
+                {showClient && <TableCell>{client.name}</TableCell>}
                 <TableCell>{formatDate(fields.issueDate.value)}</TableCell>
                 <TableCell
                   align="right"
