@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import { alpha, type Theme } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckIcon from "@mui/icons-material/Check";
+import { toast } from "react-toastify";
 import {
   applyCorrections,
   parseFieldInput,
@@ -90,6 +91,7 @@ function InvoiceReview({
     disabled: confirmed,
   };
 
+  // No toast here: both buttons save, and each says what it did.
   const save = () => {
     for (const { key, result } of parsed) {
       if (!result.ok) continue;
@@ -101,9 +103,20 @@ function InvoiceReview({
     setDrafts({});
   };
 
+  const saveChanges = () => {
+    save();
+    toast.success("Promjene spremljene");
+  };
+
   const saveAndConfirm = () => {
+    const hadChanges = hasDrafts;
     save();
     onConfirm(id);
+    const number = fields.invoiceNumber.value;
+    toast.success(
+      `${number ? `Račun ${number}` : "Račun"} potvrđen` +
+        (hadChanges ? " · promjene spremljene" : ""),
+    );
   };
 
   // With warnings left, ask first; otherwise confirm straight away.
@@ -204,7 +217,7 @@ function InvoiceReview({
                   fullWidth
                   size="large"
                   disabled={!hasDrafts || hasErrors}
-                  onClick={save}
+                  onClick={saveChanges}
                 >
                   Spremi promjene
                 </Button>

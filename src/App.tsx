@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { ToastContainer } from "react-toastify";
 import Sidebar from "./components/Sidebar";
 import CompanyTable from "./features/companies/CompanyTable";
 import InvoiceReview from "./features/invoices/InvoiceReview";
@@ -84,6 +85,9 @@ function App() {
           </>
         )}
       </Box>
+      {/* Bottom left: the other corners hold the review's action buttons
+          and status chip. */}
+      <ToastContainer position="bottom-left" autoClose={3000} />
     </Box>
   );
 }
