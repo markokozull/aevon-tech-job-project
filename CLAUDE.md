@@ -47,3 +47,13 @@ The TS config is split: `tsconfig.app.json` covers `src/`, `tsconfig.node.json` 
 - `noUnusedLocals` / `noUnusedParameters` — unused symbols fail the build.
 - ESLint `react-refresh` rule — files exporting components should only export components, or HMR breaks.
 - ESLint `react-hooks` recommended rules are enabled.
+
+## Code practices
+
+- **Types:** no `any` (enforced by lint). Avoid `as` casts and `!`: narrow with a type guard, or fix the type so the cast isn't needed. If a cast is truly unavoidable (e.g. the JSON import), keep it at that one boundary with a comment saying why.
+- **Untrusted data** (`invoices.json`, `localStorage`) is checked where it enters the app (`data.ts`, `useReviewState`), never deeper in the UI.
+- **Reuse, don't duplicate:** before writing a helper, check `format.ts`, `status.ts` and `corrections.ts`. Extract a shared helper or component once there's a second real use, or when it makes the load → review → confirm path easier to follow. Not speculatively.
+- **One job per function and component.** Split a component into its own file when it's reused or the parent gets hard to read.
+- **No magic numbers** in layout or logic: name them (e.g. `LINE_HEIGHT`, `LOW_CONFIDENCE`).
+- **Comments say why, not what.** UI text is Croatian; code and comments are English.
+- **Verify behaviour, not just types:** run logic changes against `invoices.json`; measure layout changes in a real browser when possible.
