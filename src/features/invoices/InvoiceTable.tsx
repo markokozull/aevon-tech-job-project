@@ -55,7 +55,7 @@ function InvoiceTable({ invoices, emptyText, confirmed, onReview }: Props) {
           <TableRow>
             <TableCell>Dobavljač / broj računa</TableCell>
             <TableCell>Klijent</TableCell>
-            <TableCell>Datum izdavanja</TableCell>
+            <TableCell>Datum računa</TableCell>
             <TableCell align="right">Ukupno</TableCell>
             <TableCell>Status</TableCell>
             <TableCell align="right" />
