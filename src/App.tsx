@@ -18,13 +18,14 @@ import {
   type InvoiceFilters,
 } from "./features/invoices/filters";
 import InvoiceFilterBar from "./features/invoices/InvoiceFilterBar";
+import { useReviewNavigation } from "./features/invoices/useReviewNavigation";
 import { useReviewState } from "./features/invoices/useReviewState";
 import { NAV_ITEMS, type SectionId } from "./navigation";
 
 function App() {
   const [section, setSection] = useState<SectionId>("incoming");
-  // Invoice open for review; null shows the list.
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  // Invoice open for review (null shows the list) and its prev/next.
+  const nav = useReviewNavigation();
   // Kept here, not in the list, so they survive opening an invoice.
   const [filters, setFilters] = useState<InvoiceFilters>(NO_FILTERS);
   const updateFilters = (changes: Partial<InvoiceFilters>) =>
@@ -45,17 +46,17 @@ function App() {
 
   const selectSection = (id: SectionId) => {
     setSection(id);
-    setReviewingId(null);
+    nav.close();
     setCompanyId(null);
   };
-  // After deciding on an invoice, go back to the list.
+  // After confirming, straight on to the next invoice that needs review.
   const confirm = (id: string) => {
     review.confirm(id);
-    setReviewingId(null);
+    nav.advance(id, confirmedIds);
   };
   const undo = (id: string) => {
     review.undo(id);
-    setReviewingId(null);
+    nav.close();
   };
 
   // Everything below sees the invoices with the accountant's corrections.
@@ -64,7 +65,7 @@ function App() {
   );
   const incoming = invoices.filter((invoice) => !confirmedIds.has(invoice.id));
   const confirmed = invoices.filter((invoice) => confirmedIds.has(invoice.id));
-  const reviewing = invoices.find((invoice) => invoice.id === reviewingId);
+  const reviewing = invoices.find((invoice) => invoice.id === nav.reviewingId);
   const visibleIncoming = incoming.filter((invoice) =>
     matchesFilters(invoice, filters, confirmedIds),
   );
@@ -87,7 +88,11 @@ function App() {
             key={reviewing.id}
             invoice={reviewing}
             confirmed={confirmedIds.has(reviewing.id)}
-            onBack={() => setReviewingId(null)}
+            position={nav.position}
+            slideFrom={nav.slideFrom}
+            onPrev={nav.goPrev}
+            onNext={nav.goNext}
+            onBack={nav.close}
             onConfirm={confirm}
             onUndo={undo}
             onCorrect={review.correct}
@@ -114,7 +119,9 @@ function App() {
                   }
                   confirmedIds={confirmedIds}
                   showClient
-                  onReview={setReviewingId}
+                  onReview={(id) =>
+                    nav.open(id, visibleIncoming.map((invoice) => invoice.id))
+                  }
                 />
               </Stack>
             )}
@@ -137,7 +144,9 @@ function App() {
                   }
                   confirmedIds={confirmedIds}
                   showClient
-                  onReview={setReviewingId}
+                  onReview={(id) =>
+                    nav.open(id, visibleConfirmed.map((invoice) => invoice.id))
+                  }
                 />
               </Stack>
             )}
@@ -153,7 +162,7 @@ function App() {
                     setCompanyFilters((current) => ({ ...current, ...changes }))
                   }
                   onBack={() => setCompanyId(null)}
-                  onReview={setReviewingId}
+                  onReview={nav.open}
                 />
               ) : (
                 <CompanyTable

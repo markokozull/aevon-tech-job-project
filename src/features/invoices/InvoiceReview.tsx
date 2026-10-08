@@ -6,9 +6,11 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { alpha, type Theme } from "@mui/material/styles";
+import { alpha, keyframes, type Theme } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckIcon from "@mui/icons-material/Check";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { toast } from "react-toastify";
 import {
   applyCorrections,
@@ -23,13 +25,28 @@ import InvoiceFields, { type FieldForm } from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
 import { FIELD_KEYS, findIssues, type Issue } from "./status";
 import type { FieldKey, FieldValue, Invoice } from "./types";
+import type { SlideFrom } from "./useReviewNavigation";
 
 // Both columns fill the screen below the page title and back button.
 const PANEL_HEIGHT = "calc(100vh - 170px)";
 
+// A short slide when moving to the previous/next invoice, so the switch is
+// noticed without slowing the accountant down.
+const slideIn = (offset: number) => keyframes`
+  from { opacity: 0; transform: translateX(${offset}px); }
+  to { opacity: 1; transform: none; }
+`;
+const SLIDE = { left: slideIn(-24), right: slideIn(24) };
+
 type Props = {
   invoice: Invoice;
   confirmed: boolean;
+  // Where this invoice is in the list it was opened from.
+  position: { index: number; total: number } | null;
+  slideFrom: SlideFrom;
+  // Null at either end of the list.
+  onPrev: (() => void) | null;
+  onNext: (() => void) | null;
   onBack: () => void;
   onConfirm: (id: string) => void;
   onUndo: (id: string) => void;
@@ -43,6 +60,10 @@ type Props = {
 function InvoiceReview({
   invoice,
   confirmed,
+  position,
+  slideFrom,
+  onPrev,
+  onNext,
   onBack,
   onConfirm,
   onUndo,
@@ -125,23 +146,55 @@ function InvoiceReview({
     else saveAndConfirm();
   };
 
-  const back = () => {
+  // Leaving this invoice (back, previous, next) would drop unsaved drafts.
+  const leave = (go: () => void) => {
     if (
       hasDrafts &&
       !window.confirm("Imaš nespremljene promjene. Odbaciti ih?")
     ) {
       return;
     }
-    onBack();
+    go();
   };
 
   return (
     <Stack spacing={2}>
-      <Box>
-        <Button startIcon={<ArrowBackIcon />} onClick={back}>
+      <Stack
+        direction="row"
+        sx={{ alignItems: "center", justifyContent: "space-between" }}
+      >
+        <Button startIcon={<ArrowBackIcon />} onClick={() => leave(onBack)}>
           Natrag na popis
         </Button>
-      </Box>
+        {position && (
+          // Labelled buttons, not bare arrows: the main way through a batch
+          // of invoices, so it should be easy to spot and hit.
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              variant="outlined"
+              startIcon={<ChevronLeftIcon />}
+              disabled={!onPrev}
+              onClick={() => onPrev && leave(onPrev)}
+            >
+              Prethodni
+            </Button>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, minWidth: 56, textAlign: "center" }}
+            >
+              {position.index + 1} / {position.total}
+            </Typography>
+            <Button
+              variant="outlined"
+              endIcon={<ChevronRightIcon />}
+              disabled={!onNext}
+              onClick={() => onNext && leave(onNext)}
+            >
+              Sljedeći
+            </Button>
+          </Stack>
+        )}
+      </Stack>
 
       <Box
         sx={{
@@ -152,6 +205,8 @@ function InvoiceReview({
           },
           gap: 2,
           alignItems: "start",
+          ...(slideFrom && { animation: `${SLIDE[slideFrom]} 180ms ease-out` }),
+          "@media (prefers-reduced-motion: reduce)": { animation: "none" },
         }}
       >
         <Paper

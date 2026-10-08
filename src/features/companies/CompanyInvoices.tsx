@@ -20,7 +20,8 @@ type Props = {
   filters: InvoiceFilters;
   onFiltersChange: (changes: Partial<InvoiceFilters>) => void;
   onBack: () => void;
-  onReview: (id: string) => void;
+  // Opens an invoice, with the visible list for prev/next.
+  onReview: (id: string, listIds: string[]) => void;
 };
 
 // One firm's invoices in one place, e.g. to close a month for that firm.
@@ -83,7 +84,12 @@ function CompanyInvoices({
         }
         confirmedIds={confirmedIds}
         showClient={false}
-        onReview={onReview}
+        onReview={(id) =>
+          onReview(
+            id,
+            visible.map((invoice) => invoice.id),
+          )
+        }
       />
     </Stack>
   );
