@@ -1,13 +1,25 @@
-import Alert from "@mui/material/Alert";
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import { alpha, type Theme } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import InvoiceFields from "./InvoiceFields";
+import CheckIcon from "@mui/icons-material/Check";
+import {
+  applyCorrections,
+  parseFieldInput,
+  sameValue,
+  toInputText,
+  type Corrections,
+} from "./corrections";
+import { formatAmount, formatDate } from "./format";
+import InvoiceFields, { type FieldForm } from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
-import { findIssues } from "./status";
+import { FIELD_KEYS, findIssues, type Issue } from "./status";
 import type { FieldKey, FieldValue, Invoice } from "./types";
 
 // Both columns fill the screen below the page title and back button.
@@ -23,8 +35,9 @@ type Props = {
   onRevert: (id: string, key: FieldKey) => void;
 };
 
-// Review screen: the original on the left, what was extracted and the
-// decision on the right, so nothing has to be compared across windows.
+// Review screen: the original on the left, the extracted fields as a form
+// on the right. Changes stay a draft until "Spremi promjene"; "Potvrdi
+// račun" saves them and confirms in one step.
 function InvoiceReview({
   invoice,
   confirmed,
@@ -34,13 +47,77 @@ function InvoiceReview({
   onCorrect,
   onRevert,
 }: Props) {
-  const { id, client, fields } = invoice;
-  const issues = findIssues(invoice);
+  const { id, fields } = invoice;
+  // Text of each field the accountant changed since the last save.
+  const [drafts, setDrafts] = useState<Partial<Record<FieldKey, string>>>(
+    {},
+  );
+
+  const savedText = (key: FieldKey) => toInputText(fields[key].value);
+  const parsed = FIELD_KEYS.flatMap((key) => {
+    const text = drafts[key];
+    return text === undefined
+      ? []
+      : [{ key, result: parseFieldInput(key, text) }];
+  });
+  const hasDrafts = parsed.length > 0;
+  const hasErrors = parsed.some(({ result }) => !result.ok);
+
+  // Valid drafts applied on top, so warnings react to what's typed.
+  const draftValues: Corrections[string] = {};
+  for (const { key, result } of parsed) {
+    if (result.ok) draftValues[key] = result.value;
+  }
+  const issues = findIssues(applyCorrections(invoice, draftValues));
+
+  const form: FieldForm = {
+    textOf: (key) => drafts[key] ?? savedText(key),
+    isDirty: (key) => drafts[key] !== undefined,
+    errorOf: (key) => {
+      const entry = parsed.find((item) => item.key === key);
+      return entry && !entry.result.ok ? entry.result.error : null;
+    },
+    setText: (key, text) =>
+      setDrafts((current) => {
+        const next = { ...current };
+        // Typing the saved value back means there's nothing to save.
+        if (text === savedText(key)) delete next[key];
+        else next[key] = text;
+        return next;
+      }),
+    disabled: confirmed,
+  };
+
+  const save = () => {
+    for (const { key, result } of parsed) {
+      if (!result.ok) continue;
+      const extracted = fields[key].correctedFrom ?? fields[key];
+      // Back to exactly what was read: that's not a correction.
+      if (sameValue(result.value, extracted.value)) onRevert(id, key);
+      else onCorrect(id, key, result.value);
+    }
+    setDrafts({});
+  };
+
+  const saveAndConfirm = () => {
+    save();
+    onConfirm(id);
+  };
+
+  const back = () => {
+    if (
+      hasDrafts &&
+      !window.confirm("Imaš nespremljene promjene. Odbaciti ih?")
+    ) {
+      return;
+    }
+    onBack();
+  };
 
   return (
     <Stack spacing={2}>
       <Box>
-        <Button startIcon={<ArrowBackIcon />} onClick={onBack}>
+        <Button startIcon={<ArrowBackIcon />} onClick={back}>
           Natrag na popis
         </Button>
       </Box>
@@ -50,7 +127,7 @@ function InvoiceReview({
           display: "grid",
           gridTemplateColumns: {
             xs: "1fr",
-            md: "minmax(0, 3fr) minmax(320px, 2fr)",
+            md: "minmax(0, 5fr) minmax(480px, 4fr)",
           },
           gap: 2,
           alignItems: "start",
@@ -73,59 +150,98 @@ function InvoiceReview({
           }}
         >
           <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {fields.vendorName.value ?? "Nepoznat dobavljač"}
-            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {fields.vendorName.value ?? "Nepoznat dobavljač"}
+              </Typography>
+              {issues.length > 0 && <AttentionChip issues={issues} />}
+            </Stack>
             <Typography variant="body2" color="text.secondary">
-              {fields.invoiceNumber.value ?? "Broj računa nedostaje"} ·{" "}
-              {client.name}
+              {[
+                fields.invoiceNumber.value ?? "Broj računa nedostaje",
+                formatDate(fields.issueDate.value),
+                formatAmount(fields.totalAmount.value, fields.currency.value),
+              ].join(" · ")}
             </Typography>
-
-            {issues.length > 0 && (
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                  {issues.map(({ message }) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </Box>
-              </Alert>
-            )}
 
             <Box sx={{ mt: 2 }}>
-              <InvoiceFields
-                invoice={invoice}
-                issues={issues}
-                editable={!confirmed}
-                onCorrect={(key, value) => onCorrect(id, key, value)}
-                onRevert={(key) => onRevert(id, key)}
-              />
+              <InvoiceFields invoice={invoice} issues={issues} form={form} />
             </Box>
           </Box>
 
-          {/* Pinned so the decision is always in reach, however long the invoice. */}
+          {/* Pinned so the decision is always in reach, however long the
+              invoice. */}
           <Stack
             direction="row"
-            spacing={1}
-            sx={{
-              p: 2,
-              borderTop: 1,
-              borderColor: "divider",
-              justifyContent: "flex-end",
-            }}
+            spacing={2}
+            sx={{ p: 2, borderTop: 1, borderColor: "divider" }}
           >
             {confirmed ? (
-              <Button variant="outlined" onClick={() => onUndo(id)}>
+              <Button
+                variant="outlined"
+                fullWidth
+                size="large"
+                onClick={() => onUndo(id)}
+              >
                 Vrati u ulazne
               </Button>
             ) : (
-              <Button variant="contained" onClick={() => onConfirm(id)}>
-                Potvrdi
-              </Button>
+              <>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  size="large"
+                  disabled={!hasDrafts || hasErrors}
+                  onClick={save}
+                >
+                  Spremi promjene
+                </Button>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  startIcon={<CheckIcon />}
+                  disabled={hasErrors}
+                  onClick={saveAndConfirm}
+                >
+                  Potvrdi račun
+                </Button>
+              </>
             )}
           </Stack>
         </Paper>
       </Box>
     </Stack>
+  );
+}
+
+// "Potrebna pažnja", with every warning listed on hover.
+function AttentionChip({ issues }: { issues: Issue[] }) {
+  return (
+    <Tooltip
+      title={
+        <Box component="ul" sx={{ m: 0, pl: 2 }}>
+          {issues.map(({ message }) => (
+            <li key={message}>{message}</li>
+          ))}
+        </Box>
+      }
+    >
+      <Chip
+        size="small"
+        label="Potrebna pažnja"
+        sx={{
+          flexShrink: 0,
+          fontWeight: 600,
+          color: "error.dark",
+          bgcolor: (theme: Theme) => alpha(theme.palette.error.main, 0.1),
+        }}
+      />
+    </Tooltip>
   );
 }
 

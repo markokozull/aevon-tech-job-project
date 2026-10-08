@@ -1,284 +1,228 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import type { ReactNode } from "react";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
-import Stack from "@mui/material/Stack";
+import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { alpha, type Theme } from "@mui/material/styles";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
+import { fieldKind, formatFieldValue } from "./format";
 import {
-  parseFieldInput,
-  sameValue,
-  toInputText,
-} from "./corrections";
-import { fieldKind, formatFieldValue, MISSING } from "./format";
-import { FIELD_LABELS, isUncertain } from "./status";
-import { flaggedBackground } from "./styles";
+  confidenceLevel,
+  FIELD_LABELS,
+  REQUIRED_FIELDS,
+  type ConfidenceLevel,
+  type Issue,
+} from "./status";
 import type { Extracted, FieldKey, FieldValue } from "./types";
 
-// One line of body2 text, and the row's vertical padding. The edit input
-// is exactly LINE_HEIGHT + 2 * ROW_PADDING tall, so it fits the same row.
-const LINE_HEIGHT = 20;
-const ROW_PADDING = 6;
+// Currencies offered in the dropdown. The data only has BAM; the others are
+// the ones a Bosnian/Croatian company would plausibly receive.
+const CURRENCIES = ["BAM", "EUR", "HRK", "USD"];
+
+const LEVEL_COLOR: Record<ConfidenceLevel, "info" | "warning" | "error"> = {
+  high: "info",
+  medium: "warning",
+  low: "error",
+};
 
 type Props = {
   fieldKey: FieldKey;
+  // The field as saved: extracted, or corrected by the accountant.
   field: Extracted<FieldValue>;
-  flagged: boolean;
-  editable: boolean;
-  onCorrect: (value: FieldValue) => void;
-  onRevert: () => void;
+  // Current text in the input (saved value or an unsaved change).
+  text: string;
+  dirty: boolean;
+  // Why the typed text can't be saved, e.g. "Neispravan iznos".
+  error: string | null;
+  // Warnings about this field, based on what's currently typed.
+  issues: Issue[];
+  disabled: boolean;
+  onChange: (text: string) => void;
 };
 
 function FieldRow({
   fieldKey,
   field,
-  flagged,
-  editable,
-  onCorrect,
-  onRevert,
+  text,
+  dirty,
+  error,
+  issues,
+  disabled,
+  onChange,
 }: Props) {
-  // Text in the input while editing; null when not editing.
-  const [draft, setDraft] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const kind = fieldKind(fieldKey);
   const label = FIELD_LABELS[fieldKey];
-  const original = field.correctedFrom;
-  const valueRef = useRef<HTMLDivElement>(null);
-
-  const startEditing = () => {
-    setDraft(toInputText(field.value));
-    setError(null);
-  };
-
-  // Back to the value, so keyboard users continue from the same field
-  // instead of the top of the page.
-  const stopEditing = () => {
-    setDraft(null);
-    requestAnimationFrame(() => valueRef.current?.focus());
-  };
-
-  const cancel = stopEditing;
-
-  const save = () => {
-    if (draft === null) return;
-    const result = parseFieldInput(fieldKey, draft);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    if (original && sameValue(result.value, original.value)) {
-      // Typed back exactly what was read: that's not a correction.
-      onRevert();
-    } else if (!sameValue(result.value, field.value)) {
-      onCorrect(result.value);
-    }
-    stopEditing();
-  };
-
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Escape") cancel();
-    // Bank accounts are one per line, so Enter adds a line there.
-    if (event.key === "Enter" && kind !== "list") {
-      event.preventDefault();
-      save();
-    }
-  };
-
-  // Shown under the value and under the input alike: useful while typing a
-  // correction, and the row keeps the same height in both modes. The input
-  // reaches ROW_PADDING below its line, so the notes keep that gap.
-  const notes = (isUncertain(field) || original) && (
-    <Box sx={{ mt: `${ROW_PADDING}px`, "& > *": { display: "block" } }}>
-      {isUncertain(field) && (
-        <Typography variant="caption" color="warning.dark">
-          Sigurnost {Math.round(field.confidence * 100)} %
-        </Typography>
-      )}
-      {original && (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", whiteSpace: "pre-line" }}
-        >
-          Ispravljeno · očitano:{" "}
-          {formatFieldValue(fieldKey, original.value)}
-        </Typography>
-      )}
-    </Box>
+  const required = REQUIRED_FIELDS.includes(fieldKey);
+  // What the system read, even after a correction.
+  const extracted = field.correctedFrom ?? field;
+  const edited = dirty || field.correctedFrom !== undefined;
+  const missingInSource = extracted.value === null && !edited;
+  // Problems that need fixing, not just a second look: shown in red.
+  const blocking = issues.find(
+    (issue) => issue.kind === "missing" || issue.kind === "inconsistent",
   );
+  const inconsistency = blocking?.kind === "inconsistent" ? blocking : null;
 
-  // The value itself is the edit target, for mouse and keyboard alike.
-  const handleValueKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      startEditing();
-    }
-  };
+  let helperText: ReactNode = null;
+  if (error) {
+    helperText = error;
+  } else if (inconsistency) {
+    helperText = inconsistency.message;
+  } else if (missingInSource) {
+    helperText = (
+      <Box
+        component="span"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.5,
+          color: blocking ? "error.main" : "warning.dark",
+        }}
+      >
+        <WarningAmberRoundedIcon sx={{ fontSize: 14 }} />
+        Nedostajalo je u izvoru
+      </Box>
+    );
+  }
 
   return (
     <Box
       sx={{
-        // Pencil only appears on hover or focus, on devices that can hover.
-        // Touch screens can't, so there it stays visible.
-        "@media (hover: hover)": {
-          "& .edit-button": { opacity: 0 },
-          "&:hover .edit-button, &:focus-within .edit-button": { opacity: 1 },
-        },
         display: "grid",
-        gridTemplateColumns: "140px minmax(0, 1fr) auto",
+        gridTemplateColumns: "124px minmax(0, 1fr) 52px 20px",
         alignItems: "start",
-        gap: 1,
-        px: 1,
-        py: `${ROW_PADDING}px`,
-        borderRadius: 1,
-        ...(flagged && flaggedBackground),
+        columnGap: 1.25,
+        py: 0.75,
       }}
     >
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" color="text.secondary" sx={{ pt: 1.1 }}>
         {label}
+        {required && " *"}
       </Typography>
 
-      {draft !== null ? (
-        <>
-          {/* Flex, not block: TextField is inline, and a block wrapper would
-              add a full line of page text around it. */}
-          <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column" }}>
-            <TextField
-              size="small"
-              fullWidth
-              autoFocus
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={handleKeyDown}
-              type={kind === "date" ? "date" : "text"}
-              multiline={kind === "list"}
-              error={error !== null}
-              helperText={
-                error ?? (kind === "list" ? "Jedan račun po retku" : "")
-              }
-              slotProps={{
-                htmlInput: {
-                  "aria-label": label,
-                  inputMode: kind === "amount" ? "decimal" : undefined,
-                },
-              }}
-              sx={{
-                // Compact input (32px) pulled into the row's own padding, so
-                // the row keeps its height and nothing jumps when editing.
-                my: `${-ROW_PADDING}px`,
-                // Same font and line height as the body2 value it replaces.
-                "& .MuiInputBase-root": {
-                  fontSize: "0.875rem",
-                  lineHeight: 1.43,
-                },
-                "& .MuiInputBase-input": {
-                  py: `${ROW_PADDING}px`,
-                  height: "1.43em",
-                },
-                "& .MuiInputBase-multiline": { py: `${ROW_PADDING}px` },
-                "& .MuiInputBase-inputMultiline": { py: 0 },
-              }}
-            />
-            {notes}
-          </Box>
-          <Stack
-            direction="row"
-            sx={{ height: LINE_HEIGHT, alignItems: "center" }}
-          >
-            <IconButton size="small" aria-label="Spremi" onClick={save}>
-              <CheckIcon fontSize="small" />
-            </IconButton>
-            <IconButton size="small" aria-label="Odustani" onClick={cancel}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Stack>
-        </>
-      ) : (
-        <>
-          <Tooltip
-            title={editable ? "Klikni za uređivanje" : ""}
-            placement="top-start"
-            // Only when the pointer rests on a field, not while skimming.
-            enterDelay={500}
-            enterNextDelay={500}
-            describeChild
-            disableInteractive
-          >
-            <Box
-              ref={valueRef}
-              onClick={editable ? startEditing : undefined}
-              onKeyDown={editable ? handleValueKeyDown : undefined}
-              role={editable ? "button" : undefined}
-              tabIndex={editable ? 0 : undefined}
-              sx={{
-                minWidth: 0,
-                mx: -0.5,
-                px: 0.5,
-                borderRadius: 0.5,
-                ...(editable && {
-                  cursor: "text",
-                  "&:hover": { bgcolor: "action.hover" },
-                  "&:focus-visible": {
-                    outline: 2,
-                    outlineColor: "primary.main",
-                    outlineOffset: 1,
-                  },
-                }),
-              }}
-            >
-              {field.value === null ? (
-                <Typography
-                  variant="body2"
-                  color={flagged ? "warning.dark" : "text.secondary"}
-                >
-                  {flagged ? "Nedostaje" : MISSING}
-                </Typography>
-              ) : (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 500,
-                    whiteSpace: "pre-line",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {formatFieldValue(fieldKey, field.value)}
-                </Typography>
-              )}
-              {notes}
-            </Box>
-          </Tooltip>
-          {editable && (
-            <Stack
-              direction="row"
-              // Centred on the first line of the value; the buttons are
-              // taller than the text, so they overflow it evenly.
-              sx={{ height: LINE_HEIGHT, alignItems: "center" }}
-            >
-              {original && (
-                <Button size="small" onClick={onRevert} sx={{ py: 0 }}>
-                  Vrati očitano
-                </Button>
-              )}
-              <IconButton
-                className="edit-button"
-                size="small"
-                aria-label={`Uredi: ${label}`}
-                // The value is already the keyboard target; skip a second
-                // tab stop.
-                tabIndex={-1}
-                onClick={startEditing}
-              >
-                <EditOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          )}
-        </>
+      <TextField
+        size="small"
+        fullWidth
+        value={text}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        select={kind === "currency"}
+        type={kind === "date" ? "date" : "text"}
+        multiline={kind === "list"}
+        error={error !== null || blocking !== undefined}
+        helperText={helperText}
+        slotProps={{
+          htmlInput: {
+            "aria-label": label,
+            inputMode: kind === "amount" ? "decimal" : undefined,
+          },
+          select: { displayEmpty: true },
+        }}
+      >
+        {kind === "currency" && [
+          <MenuItem key="" value="">
+            —
+          </MenuItem>,
+          // Keep an unexpected saved code selectable instead of losing it.
+          ...[...new Set([...CURRENCIES, text])]
+            .filter(Boolean)
+            .map((code) => (
+              <MenuItem key={code} value={code}>
+                {code}
+              </MenuItem>
+            )),
+        ]}
+      </TextField>
+
+      <Box sx={{ pt: 0.75 }}>
+        <ConfidenceBadge
+          confidence={extracted.confidence}
+          missing={extracted.value === null}
+          edited={edited}
+        />
+      </Box>
+
+      <Tooltip
+        title={
+          <FieldInfo fieldKey={fieldKey} extracted={extracted} issues={issues} />
+        }
+      >
+        <Box
+          tabIndex={0}
+          aria-label={`Detalji: ${label}`}
+          sx={{ pt: 1, color: "text.secondary", display: "flex" }}
+        >
+          <InfoOutlinedIcon fontSize="small" />
+        </Box>
+      </Tooltip>
+    </Box>
+  );
+}
+
+type BadgeProps = {
+  confidence: number;
+  missing: boolean;
+  edited: boolean;
+};
+
+// Confidence of the extraction in blue/orange/red. Once the accountant has
+// entered a value the extraction no longer counts, so it says "Ručno".
+function ConfidenceBadge({ confidence, missing, edited }: BadgeProps) {
+  if (missing && !edited) return null;
+  const color = edited ? null : LEVEL_COLOR[confidenceLevel(confidence)];
+
+  return (
+    <Box
+      sx={{
+        textAlign: "center",
+        py: 0.25,
+        borderRadius: 1,
+        border: 1,
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        ...(color
+          ? {
+              color: `${color}.dark`,
+              borderColor: (theme: Theme) =>
+                alpha(theme.palette[color].main, 0.4),
+              bgcolor: (theme: Theme) => alpha(theme.palette[color].main, 0.1),
+            }
+          : { color: "text.secondary", borderColor: "divider" }),
+      }}
+    >
+      {edited ? "Ručno" : `${Math.round(confidence * 100)}%`}
+    </Box>
+  );
+}
+
+type InfoProps = {
+  fieldKey: FieldKey;
+  extracted: Extracted<FieldValue>;
+  issues: Issue[];
+};
+
+// What the system read and how sure it was, plus any warnings.
+function FieldInfo({ fieldKey, extracted, issues }: InfoProps) {
+  return (
+    <Box sx={{ "& > *": { display: "block" } }}>
+      <span>
+        Očitano:{" "}
+        {extracted.value === null
+          ? "ništa"
+          : formatFieldValue(fieldKey, extracted.value)}
+      </span>
+      {extracted.value !== null && (
+        <span>Pouzdanost: {Math.round(extracted.confidence * 100)} %</span>
       )}
+      {/* "Nesigurno: <field>" and "Nedostaje: <field>" would only repeat the
+          row's label and the lines above; inconsistencies add new facts. */}
+      {issues
+        .filter((issue) => issue.kind === "inconsistent")
+        .map((issue) => (
+          <span key={issue.message}>{issue.message}</span>
+        ))}
     </Box>
   );
 }

@@ -50,6 +50,8 @@ function App() {
         </Typography>
         {reviewing ? (
           <InvoiceReview
+            // A fresh form per invoice, so drafts never carry over.
+            key={reviewing.id}
             invoice={reviewing}
             confirmed={confirmedIds.has(reviewing.id)}
             onBack={() => setReviewingId(null)}

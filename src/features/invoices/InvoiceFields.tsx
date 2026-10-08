@@ -14,31 +14,23 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { ReactNode } from "react";
 import FieldRow from "./FieldRow";
 import { formatNumber, MISSING } from "./format";
-import {
-  LINE_FIELD_LABELS,
-  isUncertain,
-  type Issue,
-  type IssueTarget,
-} from "./status";
+import { LINE_FIELD_LABELS, isUncertain, type Issue } from "./status";
 import { flaggedBackground } from "./styles";
-import type {
-  Extracted,
-  FieldKey,
-  FieldValue,
-  Invoice,
-  LineItem,
-} from "./types";
+import type { Extracted, FieldKey, Invoice, LineItem } from "./types";
 
 // Fields that go into bookkeeping: always visible, in the order they
 // appear on a paper invoice. Which fields belong here is a guess to
 // confirm with a real accountant.
-const PRIMARY_GROUPS: { title: string; fields: FieldKey[] }[] = [
-  { title: "Dobavljač", fields: ["vendorName", "vendorTaxId"] },
-  { title: "Račun", fields: ["invoiceNumber", "issueDate", "dueDate"] },
-  {
-    title: "Iznosi",
-    fields: ["netAmount", "vatAmount", "totalAmount", "currency"],
-  },
+const PRIMARY_FIELDS: FieldKey[] = [
+  "vendorName",
+  "vendorTaxId",
+  "invoiceNumber",
+  "issueDate",
+  "dueDate",
+  "netAmount",
+  "vatAmount",
+  "totalAmount",
+  "currency",
 ];
 
 // Checked automatically or not needed for booking: collapsed unless one is flagged.
@@ -51,25 +43,35 @@ const SECONDARY_FIELDS: FieldKey[] = [
   "bankAccounts",
 ];
 
+// The review screen's form state, as the field rows need it.
+export type FieldForm = {
+  textOf: (key: FieldKey) => string;
+  isDirty: (key: FieldKey) => boolean;
+  errorOf: (key: FieldKey) => string | null;
+  setText: (key: FieldKey, text: string) => void;
+  // Confirmed invoices are read-only; they have to be moved back first.
+  disabled: boolean;
+};
+
 type FieldListProps = {
   invoice: Invoice;
   keys: FieldKey[];
-  flagged: Set<IssueTarget>;
-  editable: boolean;
-  onCorrect: (key: FieldKey, value: FieldValue) => void;
-  onRevert: (key: FieldKey) => void;
+  issues: Issue[];
+  form: FieldForm;
 };
 
-function FieldList({ invoice, keys, flagged, ...editing }: FieldListProps) {
+function FieldList({ invoice, keys, issues, form }: FieldListProps) {
   return keys.map((key) => (
     <FieldRow
       key={key}
       fieldKey={key}
       field={invoice.fields[key]}
-      flagged={flagged.has(key)}
-      editable={editing.editable}
-      onCorrect={(value) => editing.onCorrect(key, value)}
-      onRevert={() => editing.onRevert(key)}
+      text={form.textOf(key)}
+      dirty={form.isDirty(key)}
+      error={form.errorOf(key)}
+      issues={issues.filter((issue) => issue.target === key)}
+      disabled={form.disabled}
+      onChange={(text) => form.setText(key, text)}
     />
   ));
 }
@@ -177,15 +179,12 @@ function Section({
 
 type Props = {
   invoice: Invoice;
+  // Warnings for what's currently typed, so they update while editing.
   issues: Issue[];
-  // Confirmed invoices are read-only; they have to be moved back first.
-  editable: boolean;
-  onCorrect: (key: FieldKey, value: FieldValue) => void;
-  onRevert: (key: FieldKey) => void;
+  form: FieldForm;
 };
 
-function InvoiceFields({ invoice, issues, ...editing }: Props) {
-  const flagged = new Set(issues.map((issue) => issue.target));
+function InvoiceFields({ invoice, issues, form }: Props) {
   const secondaryWarnings = issues.filter(
     ({ target }) => target !== "lineItems" && SECONDARY_FIELDS.includes(target),
   ).length;
@@ -195,30 +194,21 @@ function InvoiceFields({ invoice, issues, ...editing }: Props) {
 
   return (
     <Stack spacing={2}>
-      {PRIMARY_GROUPS.map((group) => (
-        <Box key={group.title}>
-          <Typography
-            variant="overline"
-            color="text.secondary"
-            sx={{ px: 1, fontWeight: 600 }}
-          >
-            {group.title}
-          </Typography>
-          <FieldList
-            invoice={invoice}
-            keys={group.fields}
-            flagged={flagged}
-            {...editing}
-          />
-        </Box>
-      ))}
+      <Box>
+        <FieldList
+          invoice={invoice}
+          keys={PRIMARY_FIELDS}
+          issues={issues}
+          form={form}
+        />
+      </Box>
 
       <Section title="Ostali podaci" warnings={secondaryWarnings}>
         <FieldList
           invoice={invoice}
           keys={SECONDARY_FIELDS}
-          flagged={flagged}
-          {...editing}
+          issues={issues}
+          form={form}
         />
       </Section>
 
