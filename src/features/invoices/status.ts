@@ -1,3 +1,4 @@
+import { formatNumber } from "./format";
 import type {
   Extracted,
   FieldKey,
@@ -7,11 +8,13 @@ import type {
 } from "./types";
 
 // Below this the extraction is treated as a guess the accountant must check.
-// Placeholder value: should be tuned against how often real errors slip through.
+// Placeholder values: should be tuned against how often real errors slip
+// through.
 const LOW_CONFIDENCE = 0.8;
+const VERY_LOW_CONFIDENCE = 0.7;
 
 // Fields an invoice can't be booked without.
-const REQUIRED_FIELDS: (keyof InvoiceFields)[] = [
+export const REQUIRED_FIELDS: (keyof InvoiceFields)[] = [
   "vendorName",
   "vendorTaxId",
   "invoiceNumber",
@@ -33,13 +36,13 @@ export const FIELD_LABELS: Record<keyof InvoiceFields, string> = {
   buyerName: "Kupac",
   buyerTaxId: "ID broj kupca",
   invoiceNumber: "Broj računa",
-  issueDate: "Datum izdavanja",
+  issueDate: "Datum računa",
   supplyDate: "Datum isporuke",
   dueDate: "Datum dospijeća",
   currency: "Valuta",
-  netAmount: "Osnovica",
-  vatAmount: "PDV",
-  totalAmount: "Ukupno",
+  netAmount: "Iznos bez PDV-a",
+  vatAmount: "Iznos PDV-a",
+  totalAmount: "Ukupni iznos",
   paymentReference: "Poziv na broj",
   bankAccounts: "Žiro račun",
 };
@@ -60,10 +63,24 @@ export const LINE_FIELD_LABELS: Record<keyof LineItem, string> = {
 // Where a warning points, so the review screen can highlight that spot.
 export type IssueTarget = keyof InvoiceFields | "lineItems";
 
+// "missing": no value; "uncertain": low confidence; "inconsistent": values
+// that contradict each other or the client.
+export type IssueKind = "missing" | "uncertain" | "inconsistent";
+
 export type Issue = {
   target: IssueTarget;
+  kind: IssueKind;
   message: string;
 };
+
+// Colour band for a confidence value, shown next to every field.
+export type ConfidenceLevel = "high" | "medium" | "low";
+
+export function confidenceLevel(confidence: number): ConfidenceLevel {
+  if (confidence >= LOW_CONFIDENCE) return "high";
+  if (confidence >= VERY_LOW_CONFIDENCE) return "medium";
+  return "low";
+}
 
 export function isUncertain(field: Extracted<unknown>) {
   return field.value !== null && field.confidence < LOW_CONFIDENCE;
@@ -77,7 +94,36 @@ function amountsMatch(a: number, b: number, tolerance = 0.01) {
   return Math.abs(a - b) <= tolerance;
 }
 
-function findLineItemIssues({ fields, lineItems }: Invoice): Issue[] {
+export type LineItemsSum = {
+  sum: number;
+  // Which header amount the sum agrees with, or null if neither.
+  matches: "net" | "total" | null;
+  net: number | null;
+  total: number | null;
+};
+
+// Sum of the line totals compared with the header amounts. Suppliers print
+// line totals either without or with VAT, so the sum may match either one.
+// Rounding is allowed per line. Null when there are no lines or a line
+// total is missing, since the sum can't be trusted then.
+export function lineItemsSum({ fields, lineItems }: Invoice): LineItemsSum | null {
+  const totals = lineItems
+    .map((item) => item.lineTotal.value)
+    .filter((value) => value !== null);
+  if (lineItems.length === 0 || totals.length < lineItems.length) return null;
+
+  const sum = totals.reduce((a, b) => a + b, 0);
+  const tolerance = 0.01 * lineItems.length;
+  const net = fields.netAmount.value;
+  const total = fields.totalAmount.value;
+  let matches: LineItemsSum["matches"] = null;
+  if (net !== null && amountsMatch(sum, net, tolerance)) matches = "net";
+  else if (total !== null && amountsMatch(sum, total, tolerance)) matches = "total";
+  return { sum, matches, net, total };
+}
+
+function findLineItemIssues(invoice: Invoice): Issue[] {
+  const { lineItems } = invoice;
   if (lineItems.length === 0) return [];
   const issues: Issue[] = [];
   const count = (test: (item: LineItem) => boolean) => lineItems.filter(test).length;
@@ -85,7 +131,11 @@ function findLineItemIssues({ fields, lineItems }: Invoice): Issue[] {
 
   const missingVat = count((item) => item.vatRate.value === null);
   if (missingVat > 0) {
-    issues.push({ target: "lineItems", message: `Stavke bez stope PDV-a (${ofAll(missingVat)})` });
+    issues.push({
+      target: "lineItems",
+      kind: "missing",
+      message: `Stavke bez stope PDV-a (${ofAll(missingVat)})`,
+    });
   }
 
   const missingOther = count((item) =>
@@ -94,6 +144,7 @@ function findLineItemIssues({ fields, lineItems }: Invoice): Issue[] {
   if (missingOther > 0) {
     issues.push({
       target: "lineItems",
+      kind: "missing",
       message: `Stavke s praznim iznosima (${ofAll(missingOther)})`,
     });
   }
@@ -102,26 +153,18 @@ function findLineItemIssues({ fields, lineItems }: Invoice): Issue[] {
   if (uncertain > 0) {
     issues.push({
       target: "lineItems",
+      kind: "uncertain",
       message: `Nesigurno očitane stavke (${ofAll(uncertain)})`,
     });
   }
 
-  // Suppliers print line totals either without or with VAT, so the sum has
-  // to match one of the two. Rounding is allowed per line.
-  const totals = lineItems.map((item) => item.lineTotal.value);
-  const { netAmount, totalAmount } = fields;
-  const allTotalsKnown = totals.every((value) => value !== null);
-  if (allTotalsKnown && netAmount.value !== null && totalAmount.value !== null) {
-    const sum = totals.reduce((a, b) => a + b, 0);
-    const tolerance = 0.01 * lineItems.length;
-    const matchesNet = amountsMatch(sum, netAmount.value, tolerance);
-    const matchesTotal = amountsMatch(sum, totalAmount.value, tolerance);
-    if (!matchesNet && !matchesTotal) {
-      issues.push({
-        target: "lineItems",
-        message: `Zbroj stavki (${sum.toFixed(2)}) ne odgovara ni osnovici ni ukupnom iznosu`,
-      });
-    }
+  const check = lineItemsSum(invoice);
+  if (check && check.net !== null && check.total !== null && !check.matches) {
+    issues.push({
+      target: "lineItems",
+      kind: "inconsistent",
+      message: `Zbroj stavki (${formatNumber(check.sum)}) ne odgovara ni iznosu bez PDV-a ni ukupnom iznosu`,
+    });
   }
 
   return issues;
@@ -135,13 +178,21 @@ export function findIssues(invoice: Invoice): Issue[] {
 
   for (const key of REQUIRED_FIELDS) {
     if (fields[key].value === null) {
-      issues.push({ target: key, message: `Nedostaje: ${FIELD_LABELS[key]}` });
+      issues.push({
+        target: key,
+        kind: "missing",
+        message: `Nedostaje: ${FIELD_LABELS[key]}`,
+      });
     }
   }
 
   for (const key of FIELD_KEYS) {
     if (isUncertain(fields[key])) {
-      issues.push({ target: key, message: `Nesigurno: ${FIELD_LABELS[key]}` });
+      issues.push({
+        target: key,
+        kind: "uncertain",
+        message: `Nesigurno: ${FIELD_LABELS[key]}`,
+      });
     }
   }
 
@@ -151,7 +202,8 @@ export function findIssues(invoice: Invoice): Issue[] {
     if (!amountsMatch(diff, 0)) {
       issues.push({
         target: "totalAmount",
-        message: `Osnovica + PDV ≠ ukupno (razlika ${diff.toFixed(2)})`,
+        kind: "inconsistent",
+        message: `Iznos bez PDV-a + PDV ≠ ukupni iznos (razlika ${formatNumber(diff)})`,
       });
     }
   }
@@ -161,6 +213,7 @@ export function findIssues(invoice: Invoice): Issue[] {
   if (fields.buyerTaxId.value !== null && fields.buyerTaxId.value !== client.taxId) {
     issues.push({
       target: "buyerTaxId",
+      kind: "inconsistent",
       message: `Kupac na računu nije ${client.name}`,
     });
   }
