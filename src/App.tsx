@@ -1,8 +1,10 @@
 import { useState } from "react";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { ToastContainer } from "react-toastify";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import { ToastContainer, toast } from "react-toastify";
 import Sidebar from "./components/Sidebar";
 import CompanyInvoices from "./features/companies/CompanyInvoices";
 import CompanyTable from "./features/companies/CompanyTable";
@@ -11,6 +13,11 @@ import InvoiceTable from "./features/invoices/InvoiceTable";
 import { applyCorrections } from "./features/invoices/corrections";
 import { invoices as extracted } from "./features/invoices/data";
 import { markDuplicates } from "./features/invoices/duplicates";
+import {
+  csvFilename,
+  downloadCsv,
+  toCsv,
+} from "./features/invoices/exportCsv";
 import {
   hasActiveFilters,
   INCOMING_STATUSES,
@@ -82,6 +89,19 @@ function App() {
   );
   const noMatchText = "Nijedan račun ne odgovara filterima.";
 
+  // Exactly what the Potvrđeni list shows, so filtering by firm and dates
+  // first gives one file per firm and period.
+  const exportConfirmed = () => {
+    const firm =
+      confirmed.find((invoice) => invoice.client.id === filters.clientId)
+        ?.client.name ?? null;
+    downloadCsv(
+      csvFilename(firm, filters.dateFrom, filters.dateTo),
+      toCsv(visibleConfirmed),
+    );
+    toast.success(`Izvezeno računa: ${visibleConfirmed.length}`);
+  };
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar selected={section} onSelect={selectSection} />
@@ -139,14 +159,32 @@ function App() {
             )}
             {section === "confirmed" && (
               <Stack spacing={2}>
-                <InvoiceFilterBar
-                  invoices={confirmed}
-                  filters={filters}
-                  onChange={updateFilters}
-                  confirmedIds={confirmedIds}
-                  statusOptions={[]}
-                  showClient
-                />
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <InvoiceFilterBar
+                    invoices={confirmed}
+                    filters={filters}
+                    onChange={updateFilters}
+                    confirmedIds={confirmedIds}
+                    statusOptions={[]}
+                    showClient
+                  />
+                  <Button
+                    variant="outlined"
+                    startIcon={<FileDownloadOutlinedIcon />}
+                    disabled={visibleConfirmed.length === 0}
+                    onClick={exportConfirmed}
+                    sx={{ flexShrink: 0 }}
+                  >
+                    Izvezi CSV
+                  </Button>
+                </Stack>
                 <InvoiceTable
                   invoices={visibleConfirmed}
                   emptyText={
