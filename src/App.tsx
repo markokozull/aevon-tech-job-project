@@ -39,9 +39,10 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   // Invoice open for review (null shows the list) and its prev/next.
   const nav = useReviewNavigation();
-  // Filters and sort of Ulazni and Potvrđeni.
-  const list = useListState();
-  const { filters } = list;
+  // Ulazni and Potvrđeni each have their own filters and sort, remembered
+  // while switching sections or opening an invoice.
+  const incomingList = useListState();
+  const confirmedList = useListState();
   // Firm whose invoices are open under "Firme"; null shows the firm list.
   const [companyId, setCompanyId] = useState<string | null>(null);
   // Search and sort of the firm list; kept here so they survive opening
@@ -91,17 +92,17 @@ function App() {
   const reviewing = invoices.find((invoice) => invoice.id === nav.reviewingId);
   const visibleIncoming = sortInvoices(
     incoming.filter((invoice) =>
-      matchesFilters(invoice, filters, confirmedIds),
+      matchesFilters(invoice, incomingList.filters, confirmedIds),
     ),
-    list.sort,
+    incomingList.sort,
     confirmedIds,
   );
-  // Confirmed invoices have no review status to filter by.
+  // Potvrđeni offers no status filter, so its status stays "all".
   const visibleConfirmed = sortInvoices(
     confirmed.filter((invoice) =>
-      matchesFilters(invoice, { ...filters, status: "all" }, confirmedIds),
+      matchesFilters(invoice, confirmedList.filters, confirmedIds),
     ),
-    list.sort,
+    confirmedList.sort,
     confirmedIds,
   );
   const noMatchText = "Nijedan račun ne odgovara filterima.";
@@ -110,10 +111,16 @@ function App() {
   // first gives one file per firm and period.
   const exportConfirmed = () => {
     const firm =
-      confirmed.find((invoice) => invoice.client.id === filters.clientId)
+      confirmed.find(
+        (invoice) => invoice.client.id === confirmedList.filters.clientId,
+      )
         ?.client.name ?? null;
     downloadCsv(
-      csvFilename(firm, filters.dateFrom, filters.dateTo),
+      csvFilename(
+        firm,
+        confirmedList.filters.dateFrom,
+        confirmedList.filters.dateTo,
+      ),
       toCsv(visibleConfirmed),
     );
     toast.success(`Izvezeno računa: ${visibleConfirmed.length}`);
@@ -160,8 +167,8 @@ function App() {
                 <Stack spacing={2}>
                   <InvoiceFilterBar
                     invoices={incoming}
-                    filters={filters}
-                    onChange={list.updateFilters}
+                    filters={incomingList.filters}
+                    onChange={incomingList.updateFilters}
                     confirmedIds={confirmedIds}
                     statusOptions={INCOMING_STATUSES}
                     showClient
@@ -169,16 +176,16 @@ function App() {
                   <InvoiceTable
                     invoices={visibleIncoming}
                     emptyText={
-                      hasActiveFilters(filters)
+                      hasActiveFilters(incomingList.filters)
                         ? noMatchText
                         : "Svi računi su pregledani."
                     }
                     confirmedIds={confirmedIds}
                     showClient
                     focusId={nav.lastId}
-                    sort={list.sort}
-                    onSortChange={list.setSort}
-                    resetKey={list.resetKey}
+                    sort={incomingList.sort}
+                    onSortChange={incomingList.setSort}
+                    resetKey={incomingList.resetKey}
                     onReview={(id) =>
                       nav.open(
                       id,
@@ -201,8 +208,8 @@ function App() {
                   >
                     <InvoiceFilterBar
                       invoices={confirmed}
-                      filters={filters}
-                      onChange={list.updateFilters}
+                      filters={confirmedList.filters}
+                      onChange={confirmedList.updateFilters}
                       confirmedIds={confirmedIds}
                       statusOptions={[]}
                       showClient
@@ -227,9 +234,9 @@ function App() {
                     confirmedIds={confirmedIds}
                     showClient
                     focusId={nav.lastId}
-                    sort={list.sort}
-                    onSortChange={list.setSort}
-                    resetKey={list.resetKey}
+                    sort={confirmedList.sort}
+                    onSortChange={confirmedList.setSort}
+                    resetKey={confirmedList.resetKey}
                     onReview={(id) =>
                       nav.open(
                       id,
