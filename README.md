@@ -46,7 +46,8 @@ Candidates, with the reasons behind them:
 Deliberately left out (candidates):
 - **Editing line items (Stavke).** Bookkeeping mostly runs on the header totals, which are editable; line items are a cross-check, and the sum row shows when they don't add up. Editing them properly needs adding missing lines (inv-006/007 look like a line was missed), which is a much bigger feature. Depends on whether line items are booked (see questions).
 - **Confirming many invoices at once.** It would save clicks on clean invoices, but "no warnings" doesn't mean correct; bulk confirm brings back exactly the errors that slip through today.
-- **Duplicate detection.** inv-006 and inv-007 are the same invoice (phone photo + scanned PDF). Worth detecting, but the right behaviour depends on how the accountant handles duplicates today.
+- **Discarding duplicates.** Duplicates are now detected and warned about (same number + supplier + total; inv-006/007 in the data, and deliberately *not* inv-001/012, the same supplier's monthly repeat of the same amount). But there's no "discard" action, so the extra copy stays in Ulazni. The right behaviour depends on how the accountant handles duplicates today.
+- **Tracking what was exported.** "Izvezi CSV" on Potvrđeni exports what the filters show (identifiers written so Excel keeps them exact), but doesn't remember what was already exported, so the same invoice could be imported twice. A real version would mark invoices as exported, or export straight into the bookkeeping software.
 
 ## Questions for a real accountant
 
