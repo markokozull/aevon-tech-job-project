@@ -56,8 +56,9 @@ function matchesDateRange(
   return (from === null || date >= from) && (to === null || date <= to);
 }
 
-// Accountants often type without diacritics, so "kolaci" finds "KOLAČI".
-function normalize(text: string) {
+// Lower case without diacritics, so "kolaci" finds "KOLAČI": accountants
+// often type without them.
+export function normalizeText(text: string) {
   return text
     .toLocaleLowerCase("hr")
     .replaceAll("đ", "d")
@@ -68,10 +69,10 @@ function normalize(text: string) {
 // Whether any of the values contains the search text. An empty search
 // matches everything.
 export function matchesText(search: string, values: (string | null)[]) {
-  const query = normalize(search.trim());
+  const query = normalizeText(search.trim());
   if (query === "") return true;
   return values.some(
-    (value) => value !== null && normalize(value).includes(query),
+    (value) => value !== null && normalizeText(value).includes(query),
   );
 }
 

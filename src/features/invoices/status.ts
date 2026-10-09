@@ -218,6 +218,18 @@ export function findIssues(invoice: Invoice): Issue[] {
     });
   }
 
+  // Booking the same invoice twice is costly; say which file it matches and
+  // whether that one is already booked.
+  for (const other of invoice.duplicates ?? []) {
+    issues.push({
+      target: "invoiceNumber",
+      kind: "inconsistent",
+      message:
+        `Mogući duplikat: isti račun je i ${other.originalFilename}` +
+        (other.confirmed ? " (već potvrđen)" : ""),
+    });
+  }
+
   return [...issues, ...findLineItemIssues(invoice)];
 }
 

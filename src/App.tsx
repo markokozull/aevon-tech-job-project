@@ -10,6 +10,7 @@ import InvoiceReview from "./features/invoices/InvoiceReview";
 import InvoiceTable from "./features/invoices/InvoiceTable";
 import { applyCorrections } from "./features/invoices/corrections";
 import { invoices as extracted } from "./features/invoices/data";
+import { markDuplicates } from "./features/invoices/duplicates";
 import {
   hasActiveFilters,
   INCOMING_STATUSES,
@@ -61,9 +62,13 @@ function App() {
     nav.close();
   };
 
-  // Everything below sees the invoices with the accountant's corrections.
-  const invoices = extracted.map((invoice) =>
-    applyCorrections(invoice, corrections[invoice.id]),
+  // Everything below sees the invoices with the accountant's corrections
+  // and with likely duplicates marked.
+  const invoices = markDuplicates(
+    extracted.map((invoice) =>
+      applyCorrections(invoice, corrections[invoice.id]),
+    ),
+    confirmedIds,
   );
   const incoming = invoices.filter((invoice) => !confirmedIds.has(invoice.id));
   const confirmed = invoices.filter((invoice) => confirmedIds.has(invoice.id));

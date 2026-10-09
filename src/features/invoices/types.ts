@@ -51,6 +51,15 @@ export type Invoice = {
   } | null;
   fields: InvoiceFields;
   lineItems: LineItem[];
+  // Not in the JSON: other invoices that look like the same one, set by
+  // markDuplicates.
+  duplicates?: DuplicateRef[];
+};
+
+export type DuplicateRef = {
+  id: string;
+  originalFilename: string;
+  confirmed: boolean;
 };
 
 export type FieldKey = keyof InvoiceFields;
