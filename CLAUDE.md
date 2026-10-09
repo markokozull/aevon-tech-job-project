@@ -34,7 +34,8 @@ There is no test runner configured yet. `yarn build` is the type-check gate — 
 
 - `index.html` → `src/main.tsx` (mounts `<App />` into `#root` under `StrictMode`) → `src/App.tsx`.
 - `main.tsx` wraps the app in MUI `ThemeProvider` + `CssBaseline` and loads Roboto (300/400/500/700) via `@fontsource/roboto`. The theme lives in `src/theme.ts` — customize palette/typography there rather than per-component.
-- `App.tsx` is the layout shell: a permanent MUI `Drawer` sidebar (`src/components/Sidebar.tsx`) plus a main area. Sections are defined once in `src/navigation.ts` (`SectionId` + `NAV_ITEMS`); the active section is plain `useState` in `App` (no router).
+- `App.tsx` is the layout shell: a MUI `Drawer` sidebar (`src/components/Sidebar.tsx`; permanent from the `md` breakpoint up, below it a drawer opened from `MobileTopBar`) plus a main area. Sections are defined once in `src/navigation.ts` (`SectionId` + `NAV_ITEMS`); the active section is plain `useState` in `App` (no router).
+- Feature code lives in `src/features/<feature>/`: `components/` (React components), `hooks/`, `utils/` (plain logic, no React), with `types.ts` and, for invoices, `data.ts` (the data entry point) at the top. App-wide components are in `src/components/`.
 - Styling goes through the MUI theme and `sx`; `src/index.css` is intentionally near-empty.
 - New files use double quotes + semicolons (the user's formatter).
 
