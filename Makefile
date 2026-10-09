@@ -1,16 +1,16 @@
-# Shortcuts for the project's commands. `make` alone installs dependencies
-# (only when package.json or yarn.lock changed) and starts the dev server.
+# Shortcuts for the project's commands. `make start` (or `make`) installs
+# dependencies when package.json or yarn.lock changed, then starts the dev
+# server. Without Node, `make docker` builds and runs the app in Docker.
 
 IMAGE := invoice-review
 PORT := 8080
 
-.PHONY: dev start build lint preview docker help
+.DEFAULT_GOAL := start
 
-dev: node_modules
+.PHONY: start build lint preview docker help
+
+start: node_modules
 	yarn dev
-
-# The name many people try first.
-start: dev
 
 node_modules: package.json yarn.lock
 	yarn install --frozen-lockfile
@@ -31,8 +31,7 @@ docker:
 	docker run --rm -p $(PORT):80 $(IMAGE)
 
 help:
-	@echo "make          install (if needed) and start the dev server"
-	@echo "make start    same as make"
+	@echo "make start    install (if needed) and start the dev server"
 	@echo "make build    type-check and build to dist/"
 	@echo "make lint     run ESLint"
 	@echo "make preview  build and serve dist/ locally"
