@@ -22,6 +22,7 @@ import {
 import ConfirmInvoiceDialog, {
   type PendingChange,
 } from "./ConfirmInvoiceDialog";
+import { confirmInvoice } from "./data";
 import { formatAmount, formatDate, formatFieldValue } from "./format";
 import InvoiceFields, { type FieldForm } from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
@@ -82,6 +83,9 @@ function InvoiceReview({
     {},
   );
   const [askingToConfirm, setAskingToConfirm] = useState(false);
+  // While the confirm request runs, everything else is locked, so the
+  // invoice can't be confirmed twice or edited halfway through.
+  const [confirming, setConfirming] = useState(false);
 
   const savedText = (key: FieldKey) => toInputText(fields[key].value);
   const parsed = FIELD_KEYS.flatMap((key) => {
@@ -128,7 +132,7 @@ function InvoiceReview({
         else next[key] = text;
         return next;
       }),
-    disabled: confirmed,
+    disabled: confirmed || confirming,
   };
 
   // No toast here: both buttons save, and each says what it did.
@@ -155,7 +159,9 @@ function InvoiceReview({
     );
   };
 
-  const saveAndConfirm = () => {
+  const saveAndConfirm = async () => {
+    setConfirming(true);
+    await confirmInvoice(id);
     const hadChanges = hasDrafts;
     save();
     onConfirm(id);
@@ -167,6 +173,7 @@ function InvoiceReview({
       `${invoiceLabel(number)} potvrđen` +
         (hadChanges ? " · promjene spremljene" : ""),
     );
+    setConfirming(false);
   };
 
   // Unsaved edits or warnings left: ask first. Otherwise confirm straight
@@ -175,7 +182,7 @@ function InvoiceReview({
     if (pendingChanges.length > 0 || issues.length > 0) {
       setAskingToConfirm(true);
     } else {
-      saveAndConfirm();
+      void saveAndConfirm();
     }
   };
 
@@ -196,7 +203,11 @@ function InvoiceReview({
         direction="row"
         sx={{ alignItems: "center", justifyContent: "space-between" }}
       >
-        <Button startIcon={<ArrowBackIcon />} onClick={() => leave(onBack)}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          disabled={confirming}
+          onClick={() => leave(onBack)}
+        >
           Natrag na popis
         </Button>
         {position && (
@@ -206,7 +217,7 @@ function InvoiceReview({
             <Button
               variant="outlined"
               startIcon={<ChevronLeftIcon />}
-              disabled={!onPrev}
+              disabled={!onPrev || confirming}
               onClick={() => onPrev && leave(onPrev)}
             >
               Prethodni
@@ -220,7 +231,7 @@ function InvoiceReview({
             <Button
               variant="outlined"
               endIcon={<ChevronRightIcon />}
-              disabled={!onNext}
+              disabled={!onNext || confirming}
               onClick={() => onNext && leave(onNext)}
             >
               Sljedeći
@@ -304,7 +315,7 @@ function InvoiceReview({
                   variant="outlined"
                   fullWidth
                   size="large"
-                  disabled={!hasDrafts || hasErrors}
+                  disabled={!hasDrafts || hasErrors || confirming}
                   onClick={saveChanges}
                 >
                   Spremi promjene
@@ -315,6 +326,8 @@ function InvoiceReview({
                   size="large"
                   startIcon={<CheckIcon />}
                   disabled={hasErrors}
+                  loading={confirming}
+                  loadingPosition="start"
                   onClick={requestConfirm}
                 >
                   Potvrdi račun
@@ -330,7 +343,11 @@ function InvoiceReview({
         changes={pendingChanges}
         issues={issues}
         onCancel={() => setAskingToConfirm(false)}
-        onConfirm={saveAndConfirm}
+        onConfirm={() => {
+          // Close first, so the spinner shows on "Potvrdi račun".
+          setAskingToConfirm(false);
+          void saveAndConfirm();
+        }}
       />
     </Stack>
   );

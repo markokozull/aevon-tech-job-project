@@ -6,3 +6,13 @@ import type { Invoice } from "./types";
 // TypeScript infers the JSON too literally (e.g. `value: null` as type null),
 // so it's given the documented shape; the types allow null for missing values.
 export const invoices = invoicesFile.invoices as Invoice[];
+
+// Confirming would be a request to the server. It's simulated with a short
+// delay, so the UI has to show that it's working and block a second click.
+const CONFIRM_DELAY_MS = 500;
+
+export function confirmInvoice(invoiceId: string) {
+  return new Promise<string>((resolve) =>
+    setTimeout(() => resolve(invoiceId), CONFIRM_DELAY_MS),
+  );
+}
