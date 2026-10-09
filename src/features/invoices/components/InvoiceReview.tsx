@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -72,6 +73,8 @@ type Props = {
   onBack: () => void;
   onConfirm: (id: string) => void;
   onUndo: (id: string) => void;
+  // Opens another invoice, e.g. the duplicate of this one.
+  onOpenInvoice: (id: string) => void;
   onCorrect: (id: string, key: FieldKey, value: FieldValue) => void;
   onRevert: (id: string, key: FieldKey) => void;
 };
@@ -89,6 +92,7 @@ function InvoiceReview({
   onBack,
   onConfirm,
   onUndo,
+  onOpenInvoice,
   onCorrect,
   onRevert,
 }: Props) {
@@ -376,6 +380,30 @@ function InvoiceReview({
                 formatAmount(fields.totalAmount.value, fields.currency.value),
               ].join(" · ")}
             </Typography>
+
+            {/* One click to the other copy, to compare and decide which
+                one to keep. */}
+            {invoice.duplicates?.map((other) => (
+              <Alert
+                key={other.id}
+                severity="error"
+                sx={{ mt: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    disabled={confirming}
+                    onClick={() => leave(() => onOpenInvoice(other.id))}
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    Otvori duplikat
+                  </Button>
+                }
+              >
+                Isti račun postoji i kao {other.originalFilename}
+                {other.confirmed && " (već potvrđen)"}.
+              </Alert>
+            ))}
 
             <Box sx={{ mt: 2 }}>
               <InvoiceFields invoice={invoice} issues={issues} form={form} />

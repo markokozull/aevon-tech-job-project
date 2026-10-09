@@ -40,6 +40,22 @@ export function useReviewNavigation() {
 
   const close = () => setView((current) => ({ ...current, reviewingId: null }));
 
+  // Jump to a related invoice (e.g. its duplicate). If it's not in the list,
+  // it's slotted in right after the current one, so "Prethodni" leads back.
+  const jumpTo = (id: string) => {
+    const target = queue.indexOf(id);
+    if (target >= 0) {
+      goTo(id, target < index ? "left" : "right");
+      return;
+    }
+    setQueue((current) => [
+      ...current.slice(0, index + 1),
+      id,
+      ...current.slice(index + 1),
+    ]);
+    goTo(id, "right");
+  };
+
   // After confirming, move on to the next invoice in the list that still
   // needs review; back to the list when there is none. Confirming waits for
   // the server, so the accountant may have left in the meantime (e.g. via
@@ -66,6 +82,7 @@ export function useReviewNavigation() {
     goNext: nextId ? () => goTo(nextId, "right") : null,
     open,
     close,
+    jumpTo,
     advance,
   };
 }

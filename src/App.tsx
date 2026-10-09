@@ -158,6 +158,7 @@ function App() {
               onBack={nav.close}
               onConfirm={confirm}
               onUndo={undo}
+              onOpenInvoice={nav.jumpTo}
               onCorrect={review.correct}
               onRevert={review.revert}
             />
