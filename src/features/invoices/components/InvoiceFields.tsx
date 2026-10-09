@@ -6,10 +6,12 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import FieldRow from "./FieldRow";
 import LineItemsTable from "./LineItemsTable";
-import { lineItemsSum, type Issue } from "../utils/status";
+import { useReveal } from "../hooks/useReveal";
+import { flashSx } from "../utils/highlight";
+import { lineItemsSum, type Issue, type IssueTarget } from "../utils/status";
 import type { FieldKey, Invoice } from "../types";
 
 // Fields that go into bookkeeping: always visible, in the order they
@@ -37,6 +39,10 @@ const SECONDARY_FIELDS: FieldKey[] = [
   "bankAccounts",
 ];
 
+// A warning picked from the "Potrebna pažnja" list; `signal` changes on
+// every pick, so picking the same one again repeats the scroll.
+export type FieldFocus = { target: IssueTarget; signal: number };
+
 // The review screen's form state, as the field rows need it.
 export type FieldForm = {
   textOf: (key: FieldKey) => string;
@@ -52,9 +58,10 @@ type FieldListProps = {
   keys: FieldKey[];
   issues: Issue[];
   form: FieldForm;
+  focus: FieldFocus | null;
 };
 
-function FieldList({ invoice, keys, issues, form }: FieldListProps) {
+function FieldList({ invoice, keys, issues, form, focus }: FieldListProps) {
   return keys.map((key) => (
     <FieldRow
       key={key}
@@ -66,6 +73,7 @@ function FieldList({ invoice, keys, issues, form }: FieldListProps) {
       issues={issues.filter((issue) => issue.target === key)}
       disabled={form.disabled}
       onChange={(text) => form.setText(key, text)}
+      revealSignal={focus?.target === key ? focus.signal : null}
     />
   ));
 }
@@ -73,19 +81,39 @@ function FieldList({ invoice, keys, issues, form }: FieldListProps) {
 function Section({
   title,
   warnings,
+  openSignal,
+  revealSignal,
   children,
 }: {
   title: string;
   warnings: number;
+  // Changes when a warning inside is picked: open the section.
+  openSignal: number | null;
+  // Changes when the section itself is the target (line items).
+  revealSignal: number | null;
   children: ReactNode;
 }) {
+  // A warning is never hidden: flagged sections start open.
+  const [expanded, setExpanded] = useState(warnings > 0);
+  // Opening on a pick is adjusted while rendering, not in an effect, so
+  // the content is already visible when the field scrolls into view.
+  const [seenOpenSignal, setSeenOpenSignal] = useState(openSignal);
+  if (openSignal !== seenOpenSignal) {
+    setSeenOpenSignal(openSignal);
+    if (openSignal !== null) setExpanded(true);
+  }
+  const sectionRef = useRef<HTMLDivElement>(null);
+  useReveal(sectionRef, revealSignal);
+
   return (
     <Accordion
+      ref={sectionRef}
       disableGutters
       elevation={0}
-      // A warning is never hidden: flagged sections start open.
-      defaultExpanded={warnings > 0}
+      expanded={expanded}
+      onChange={(_, next) => setExpanded(next)}
       sx={{
+        ...flashSx(revealSignal),
         border: 1,
         borderColor: "divider",
         borderRadius: 1,
@@ -118,9 +146,17 @@ type Props = {
   // Warnings for what's currently typed, so they update while editing.
   issues: Issue[];
   form: FieldForm;
+  focus: FieldFocus | null;
 };
 
-function InvoiceFields({ invoice, issues, form }: Props) {
+function InvoiceFields({ invoice, issues, form, focus }: Props) {
+  const focusIn = (inSection: boolean) =>
+    focus && inSection ? focus.signal : null;
+  const focusesSecondary =
+    focus !== null &&
+    focus.target !== "lineItems" &&
+    SECONDARY_FIELDS.includes(focus.target);
+  const focusesLineItems = focus?.target === "lineItems";
   const secondaryWarnings = issues.filter(
     ({ target }) => target !== "lineItems" && SECONDARY_FIELDS.includes(target),
   ).length;
@@ -136,21 +172,30 @@ function InvoiceFields({ invoice, issues, form }: Props) {
           keys={PRIMARY_FIELDS}
           issues={issues}
           form={form}
+          focus={focus}
         />
       </Box>
 
-      <Section title="Ostali podaci" warnings={secondaryWarnings}>
+      <Section
+        title="Ostali podaci"
+        warnings={secondaryWarnings}
+        openSignal={focusIn(focusesSecondary)}
+        revealSignal={null}
+      >
         <FieldList
           invoice={invoice}
           keys={SECONDARY_FIELDS}
           issues={issues}
           form={form}
+          focus={focus}
         />
       </Section>
 
       <Section
         title={`Stavke (${invoice.lineItems.length})`}
         warnings={lineItemIssues.length}
+        openSignal={focusIn(focusesLineItems)}
+        revealSignal={focusIn(focusesLineItems)}
       >
         <LineItemsTable
           items={invoice.lineItems}

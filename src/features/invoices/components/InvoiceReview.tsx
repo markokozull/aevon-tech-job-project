@@ -5,11 +5,14 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { alpha, keyframes, type Theme } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckIcon from "@mui/icons-material/Check";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { toast } from "react-toastify";
@@ -25,7 +28,10 @@ import ConfirmInvoiceDialog, {
 } from "./ConfirmInvoiceDialog";
 import { confirmInvoice } from "../data";
 import { formatAmount, formatDate, formatFieldValue } from "../utils/format";
-import InvoiceFields, { type FieldForm } from "./InvoiceFields";
+import InvoiceFields, {
+  type FieldFocus,
+  type FieldForm,
+} from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
 import { FIELD_KEYS, FIELD_LABELS, findIssues, type Issue } from "../utils/status";
 import type { FieldKey, FieldValue, Invoice } from "../types";
@@ -102,6 +108,13 @@ function InvoiceReview({
     {},
   );
   const [askingToConfirm, setAskingToConfirm] = useState(false);
+  // The warning last picked from "Potrebna pažnja", to scroll to it.
+  const [focus, setFocus] = useState<FieldFocus | null>(null);
+  const showIssue = (issue: Issue) =>
+    setFocus((current) => ({
+      target: issue.target,
+      signal: (current?.signal ?? 0) + 1,
+    }));
   // While the confirm request runs, everything else is locked, so the
   // invoice can't be confirmed twice or edited halfway through.
   const [confirming, setConfirming] = useState(false);
@@ -371,7 +384,9 @@ function InvoiceReview({
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 {fields.vendorName.value ?? "Nepoznat dobavljač"}
               </Typography>
-              {issues.length > 0 && <AttentionChip issues={issues} />}
+              {issues.length > 0 && (
+                <AttentionChip issues={issues} onPick={showIssue} />
+              )}
             </Stack>
             <Typography variant="body2" color="text.secondary">
               {[
@@ -406,7 +421,12 @@ function InvoiceReview({
             ))}
 
             <Box sx={{ mt: 2 }}>
-              <InvoiceFields invoice={invoice} issues={issues} form={form} />
+              <InvoiceFields
+                invoice={invoice}
+                issues={issues}
+                form={form}
+                focus={focus}
+              />
             </Box>
           </Box>
 
@@ -486,21 +506,30 @@ function InvoiceReview({
   );
 }
 
-// "Potrebna pažnja", with every warning listed on hover.
-function AttentionChip({ issues }: { issues: Issue[] }) {
+// "Potrebna pažnja" opens a list of every warning; picking one scrolls
+// to that field and highlights it.
+function AttentionChip({
+  issues,
+  onPick,
+}: {
+  issues: Issue[];
+  onPick: (issue: Issue) => void;
+}) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
   return (
-    <Tooltip
-      title={
-        <Box component="ul" sx={{ m: 0, pl: 2 }}>
-          {issues.map(({ message }) => (
-            <li key={message}>{message}</li>
-          ))}
-        </Box>
-      }
-    >
+    <>
       <Chip
         size="small"
-        label="Potrebna pažnja"
+        label={
+          <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
+            Potrebna pažnja
+            <ExpandMoreIcon sx={{ fontSize: 18, ml: 0.25, mr: -0.5 }} />
+          </Box>
+        }
+        onClick={(event) => setAnchor(event.currentTarget)}
+        aria-haspopup="menu"
+        aria-expanded={anchor !== null}
         sx={{
           flexShrink: 0,
           fontWeight: 600,
@@ -508,7 +537,28 @@ function AttentionChip({ issues }: { issues: Issue[] }) {
           bgcolor: (theme: Theme) => alpha(theme.palette.error.main, 0.1),
         }}
       />
-    </Tooltip>
+      <Menu
+        anchorEl={anchor}
+        open={anchor !== null}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        slotProps={{ paper: { sx: { maxWidth: 420 } } }}
+      >
+        {issues.map((issue) => (
+          <MenuItem
+            key={issue.message}
+            onClick={() => {
+              setAnchor(null);
+              onPick(issue);
+            }}
+            sx={{ whiteSpace: "normal", typography: "body2" }}
+          >
+            {issue.message}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }
 

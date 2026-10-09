@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import Box from "@mui/material/Box";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
@@ -16,6 +16,8 @@ import {
   type Issue,
 } from "../utils/status";
 import type { Extracted, FieldKey, FieldValue } from "../types";
+import { useReveal } from "../hooks/useReveal";
+import { flashSx } from "../utils/highlight";
 
 // Currencies offered in the dropdown. The data only has BAM; the others are
 // the ones a Bosnian/Croatian company would plausibly receive.
@@ -40,6 +42,9 @@ type Props = {
   issues: Issue[];
   disabled: boolean;
   onChange: (text: string) => void;
+  // Changes when this field is picked from the warnings list: scroll to
+  // it, highlight it and put the cursor in it.
+  revealSignal: number | null;
 };
 
 function FieldRow({
@@ -51,7 +56,10 @@ function FieldRow({
   issues,
   disabled,
   onChange,
+  revealSignal,
 }: Props) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  useReveal(rowRef, revealSignal);
   const kind = fieldKind(fieldKey);
   const label = FIELD_LABELS[fieldKey];
   const required = REQUIRED_FIELDS.includes(fieldKey);
@@ -89,7 +97,10 @@ function FieldRow({
 
   return (
     <Box
+      ref={rowRef}
       sx={{
+        ...flashSx(revealSignal),
+        borderRadius: 1,
         display: "grid",
         // On phones the label goes above the input, which then gets the
         // full width next to its badge and info icon.
