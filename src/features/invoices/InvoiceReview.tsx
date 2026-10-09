@@ -19,11 +19,13 @@ import {
   toInputText,
   type Corrections,
 } from "./corrections";
-import ConfirmWarningsDialog from "./ConfirmWarningsDialog";
-import { formatAmount, formatDate } from "./format";
+import ConfirmInvoiceDialog, {
+  type PendingChange,
+} from "./ConfirmInvoiceDialog";
+import { formatAmount, formatDate, formatFieldValue } from "./format";
 import InvoiceFields, { type FieldForm } from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
-import { FIELD_KEYS, findIssues, type Issue } from "./status";
+import { FIELD_KEYS, FIELD_LABELS, findIssues, type Issue } from "./status";
 import type { FieldKey, FieldValue, Invoice } from "./types";
 import type { SlideFrom } from "./useReviewNavigation";
 
@@ -93,6 +95,19 @@ function InvoiceReview({
     if (result.ok) draftValues[key] = result.value;
   }
   const issues = findIssues(applyCorrections(invoice, draftValues));
+  // Unsaved edits as "saved value → typed value", for the confirm dialog.
+  // Invalid ones can't get there: they disable "Potvrdi račun".
+  const pendingChanges: PendingChange[] = parsed.flatMap(({ key, result }) =>
+    result.ok
+      ? [
+          {
+            label: FIELD_LABELS[key],
+            from: formatFieldValue(key, fields[key].value),
+            to: formatFieldValue(key, result.value),
+          },
+        ]
+      : [],
+  );
 
   const form: FieldForm = {
     textOf: (key) => drafts[key] ?? savedText(key),
@@ -133,17 +148,24 @@ function InvoiceReview({
     const hadChanges = hasDrafts;
     save();
     onConfirm(id);
-    const number = fields.invoiceNumber.value;
+    // The number as it reads after this save, if it was just corrected.
+    const typed = draftValues.invoiceNumber;
+    const number =
+      typeof typed === "string" ? typed : fields.invoiceNumber.value;
     toast.success(
       `${number ? `Račun ${number}` : "Račun"} potvrđen` +
         (hadChanges ? " · promjene spremljene" : ""),
     );
   };
 
-  // With warnings left, ask first; otherwise confirm straight away.
+  // Unsaved edits or warnings left: ask first. Otherwise confirm straight
+  // away.
   const requestConfirm = () => {
-    if (issues.length > 0) setAskingToConfirm(true);
-    else saveAndConfirm();
+    if (pendingChanges.length > 0 || issues.length > 0) {
+      setAskingToConfirm(true);
+    } else {
+      saveAndConfirm();
+    }
   };
 
   // Leaving this invoice (back, previous, next) would drop unsaved drafts.
@@ -292,8 +314,9 @@ function InvoiceReview({
         </Paper>
       </Box>
 
-      <ConfirmWarningsDialog
+      <ConfirmInvoiceDialog
         open={askingToConfirm}
+        changes={pendingChanges}
         issues={issues}
         onCancel={() => setAskingToConfirm(false)}
         onConfirm={saveAndConfirm}
