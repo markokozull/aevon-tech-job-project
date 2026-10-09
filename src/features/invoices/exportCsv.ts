@@ -52,9 +52,10 @@ function csvValue(key: FieldKey, value: FieldValue): string {
   return guardFormula(value);
 }
 
-// Text from OCR could start like a formula ("=..."); Excel would run it.
+// Text from OCR could start like a formula ("=...", also after a tab or
+// carriage return); Excel would run it.
 function guardFormula(text: string) {
-  return /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
 }
 
 function quote(text: string) {
@@ -78,6 +79,14 @@ export function toCsv(invoices: Invoice[]) {
   return `\uFEFF${lines.join("\r\n")}\r\n`;
 }
 
+// YYYY-MM-DD in the accountant's time zone. toISOString() is UTC, so just
+// after midnight in Croatia it would still say yesterday.
+function localDate(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const month = pad(date.getMonth() + 1);
+  return `${date.getFullYear()}-${month}-${pad(date.getDate())}`;
+}
+
 // "potvrdeni-racuni_bili-brig-d-o-o-grude_2022-01-01_2022-01-31.csv"
 export function csvFilename(
   firmName: string | null,
@@ -87,7 +96,7 @@ export function csvFilename(
   const firm = firmName
     ? normalizeText(firmName).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
     : "sve-firme";
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDate(new Date());
   const period =
     dateFrom || dateTo
       ? `${dateFrom ?? "od-pocetka"}_${dateTo ?? today}`
