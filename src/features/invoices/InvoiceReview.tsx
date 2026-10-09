@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -29,6 +29,12 @@ import OriginalDocument from "./OriginalDocument";
 import { FIELD_KEYS, FIELD_LABELS, findIssues, type Issue } from "./status";
 import type { FieldKey, FieldValue, Invoice } from "./types";
 import type { SlideFrom } from "./useReviewNavigation";
+
+// Where the arrow keys already mean something: moving the cursor in a field,
+// choosing in a dropdown or menu, or anything inside an open dialog.
+const ARROW_KEYS_IN_USE =
+  "input, textarea, select, [contenteditable='true'], [role='combobox'], " +
+  "[role='listbox'], [role='menu'], [role='dialog']";
 
 // "Račun 1-41/22", or just "Račun" when the number is missing; used in toasts.
 const invoiceLabel = (number: string | null) =>
@@ -197,6 +203,33 @@ function InvoiceReview({
     go();
   };
 
+  // ← / → move to the previous / next invoice, like the buttons, but only
+  // when the arrows aren't needed where the focus is. With a modifier held
+  // they're left alone (Alt+← is the browser's "back").
+  const onArrowKey = useEffectEvent((event: KeyboardEvent) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+      return;
+    }
+    if (confirming || askingToConfirm) return;
+    if (
+      event.target instanceof Element &&
+      event.target.closest(ARROW_KEYS_IN_USE)
+    ) {
+      return;
+    }
+    let go: (() => void) | null = null;
+    if (event.key === "ArrowLeft") go = onPrev;
+    if (event.key === "ArrowRight") go = onNext;
+    if (!go) return;
+    event.preventDefault();
+    leave(go);
+  });
+
+  useEffect(() => {
+    window.addEventListener("keydown", onArrowKey);
+    return () => window.removeEventListener("keydown", onArrowKey);
+  }, []);
+
   return (
     <Stack spacing={2}>
       <Stack
@@ -214,28 +247,37 @@ function InvoiceReview({
           // Labelled buttons, not bare arrows: the main way through a batch
           // of invoices, so it should be easy to spot and hit.
           <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-            <Button
-              variant="outlined"
-              startIcon={<ChevronLeftIcon />}
-              disabled={!onPrev || confirming}
-              onClick={() => onPrev && leave(onPrev)}
-            >
-              Prethodni
-            </Button>
+            <Tooltip title="Prethodni račun (←)">
+              {/* span: disabled buttons don't fire the events Tooltip needs */}
+              <span>
+                <Button
+                  variant="outlined"
+                  startIcon={<ChevronLeftIcon />}
+                  disabled={!onPrev || confirming}
+                  onClick={() => onPrev && leave(onPrev)}
+                >
+                  Prethodni
+                </Button>
+              </span>
+            </Tooltip>
             <Typography
               variant="body2"
               sx={{ fontWeight: 600, minWidth: 56, textAlign: "center" }}
             >
               {position.index + 1} / {position.total}
             </Typography>
-            <Button
-              variant="outlined"
-              endIcon={<ChevronRightIcon />}
-              disabled={!onNext || confirming}
-              onClick={() => onNext && leave(onNext)}
-            >
-              Sljedeći
-            </Button>
+            <Tooltip title="Sljedeći račun (→)">
+              <span>
+                <Button
+                  variant="outlined"
+                  endIcon={<ChevronRightIcon />}
+                  disabled={!onNext || confirming}
+                  onClick={() => onNext && leave(onNext)}
+                >
+                  Sljedeći
+                </Button>
+              </span>
+            </Tooltip>
           </Stack>
         )}
       </Stack>
