@@ -7,14 +7,22 @@ An interface for an accountant to review and confirm incoming invoices: the orig
 Requires Node 20.19+ or 22.12+ and Yarn 1.
 
 ```bash
-yarn install && yarn dev
+make            # or: make start, or: yarn install && yarn dev
 ```
 
-Then open http://localhost:5173.
+Then open http://localhost:5173. (`make help` lists the other shortcuts.)
+
+Without Node, with Docker only:
+
+```bash
+make docker     # or: docker build -t invoice-review . && docker run --rm -p 8080:80 invoice-review
+```
+
+Then open http://localhost:8080. This serves the production build; the first build takes a few minutes.
 
 - Invoice data is `invoices.json`; the originals (photos, scans, PDFs) are in `public/originals/`. Five invoices have no original, and the app says so.
 - There is no backend. Confirmations and corrections are kept in the browser's `localStorage` (`invoice-review:confirmed`, `invoice-review:corrections`). Delete them in DevTools → Application → Local Storage to start over.
-- `yarn build` type-checks and builds; `yarn lint` runs ESLint.
+- `make build` (or `yarn build`) type-checks and builds; `make lint` (or `yarn lint`) runs ESLint.
 
 ---
 
