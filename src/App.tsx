@@ -7,7 +7,9 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { ToastContainer, toast } from "react-toastify";
 import Sidebar from "./components/Sidebar";
 import CompanyInvoices from "./features/companies/CompanyInvoices";
-import CompanyTable from "./features/companies/CompanyTable";
+import CompanyTable, {
+  type CompanySortKey,
+} from "./features/companies/CompanyTable";
 import InvoiceReview from "./features/invoices/InvoiceReview";
 import InvoiceTable from "./features/invoices/InvoiceTable";
 import { applyCorrections } from "./features/invoices/corrections";
@@ -24,7 +26,7 @@ import {
   matchesFilters,
 } from "./features/invoices/filters";
 import InvoiceFilterBar from "./features/invoices/InvoiceFilterBar";
-import { sortInvoices } from "./features/invoices/sorting";
+import { sortInvoices, type Sort } from "./features/invoices/sorting";
 import { useListState } from "./features/invoices/useListState";
 import { useReviewNavigation } from "./features/invoices/useReviewNavigation";
 import { useReviewState } from "./features/invoices/useReviewState";
@@ -39,8 +41,13 @@ function App() {
   const { filters } = list;
   // Firm whose invoices are open under "Firme"; null shows the firm list.
   const [companyId, setCompanyId] = useState<string | null>(null);
-  // Search on the firm list; kept here so it survives opening a firm.
+  // Search and sort of the firm list; kept here so they survive opening
+  // a firm.
   const [companySearch, setCompanySearch] = useState("");
+  const [companySort, setCompanySort] = useState<Sort<CompanySortKey>>({
+    key: "name",
+    direction: "asc",
+  });
   // A firm's own filters and sort, so opening a firm doesn't change the
   // main lists. Each firm starts unfiltered.
   const companyList = useListState();
@@ -232,6 +239,8 @@ function App() {
                   onOpen={openCompany}
                   search={companySearch}
                   onSearchChange={setCompanySearch}
+                  sort={companySort}
+                  onSortChange={setCompanySort}
                 />
               ))}
           </>

@@ -7,9 +7,13 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import SearchField from "../../components/SearchField";
 import { matchesText } from "../invoices/filters";
+import { compareValues, nextSort, type Sort } from "../invoices/sorting";
 import type { Invoice } from "../invoices/types";
+
+export type CompanySortKey = "name" | "pending" | "confirmed";
 
 type CompanyRow = {
   id: string;
@@ -42,6 +46,9 @@ type Props = {
   onOpen: (clientId: string) => void;
   search: string;
   onSearchChange: (search: string) => void;
+  // E.g. "Na čekanju", descending: the firms with the most work first.
+  sort: Sort<CompanySortKey>;
+  onSortChange: (sort: Sort<CompanySortKey>) => void;
 };
 
 function CompanyTable({
@@ -50,9 +57,22 @@ function CompanyTable({
   onOpen,
   search,
   onSearchChange,
+  sort,
+  onSortChange,
 }: Props) {
-  const rows = toCompanyRows(incoming, confirmed).filter((row) =>
-    matchesText(search, [row.name, row.taxId]),
+  // Rows come sorted by name, so ties in a count stay alphabetical.
+  const rows = toCompanyRows(incoming, confirmed)
+    .filter((row) => matchesText(search, [row.name, row.taxId]))
+    .sort((a, b) => compareValues(a[sort.key], b[sort.key], sort.direction));
+
+  const sortable = (key: CompanySortKey, label: string) => (
+    <TableSortLabel
+      active={sort.key === key}
+      direction={sort.key === key ? sort.direction : "asc"}
+      onClick={() => onSortChange(nextSort(sort, key))}
+    >
+      {label}
+    </TableSortLabel>
   );
 
   return (
@@ -69,10 +89,14 @@ function CompanyTable({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Firma</TableCell>
+              <TableCell>{sortable("name", "Firma")}</TableCell>
               <TableCell>ID broj</TableCell>
-              <TableCell align="right">Na čekanju</TableCell>
-              <TableCell align="right">Potvrđeno</TableCell>
+              <TableCell align="right">
+                {sortable("pending", "Na čekanju")}
+              </TableCell>
+              <TableCell align="right">
+                {sortable("confirmed", "Potvrđeno")}
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
