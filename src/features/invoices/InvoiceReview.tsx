@@ -29,6 +29,10 @@ import { FIELD_KEYS, FIELD_LABELS, findIssues, type Issue } from "./status";
 import type { FieldKey, FieldValue, Invoice } from "./types";
 import type { SlideFrom } from "./useReviewNavigation";
 
+// "Račun 1-41/22", or just "Račun" when the number is missing; used in toasts.
+const invoiceLabel = (number: string | null) =>
+  number ? `Račun ${number}` : "Račun";
+
 // Both columns fill the screen below the page title and back button.
 const PANEL_HEIGHT = "calc(100vh - 170px)";
 
@@ -144,6 +148,13 @@ function InvoiceReview({
     toast.success("Promjene spremljene");
   };
 
+  const returnToIncoming = () => {
+    onUndo(id);
+    toast.success(
+      `${invoiceLabel(fields.invoiceNumber.value)} vraćen u ulazne`,
+    );
+  };
+
   const saveAndConfirm = () => {
     const hadChanges = hasDrafts;
     save();
@@ -153,7 +164,7 @@ function InvoiceReview({
     const number =
       typeof typed === "string" ? typed : fields.invoiceNumber.value;
     toast.success(
-      `${number ? `Račun ${number}` : "Račun"} potvrđen` +
+      `${invoiceLabel(number)} potvrđen` +
         (hadChanges ? " · promjene spremljene" : ""),
     );
   };
@@ -283,7 +294,7 @@ function InvoiceReview({
                 variant="outlined"
                 fullWidth
                 size="large"
-                onClick={() => onUndo(id)}
+                onClick={returnToIncoming}
               >
                 Vrati u ulazne
               </Button>
