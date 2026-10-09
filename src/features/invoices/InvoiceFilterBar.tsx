@@ -1,15 +1,12 @@
 import Autocomplete from "@mui/material/Autocomplete";
 import Button from "@mui/material/Button";
 import InputAdornment from "@mui/material/InputAdornment";
-import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   hasActiveFilters,
   matchesFilters,
-  monthLabel,
-  monthOf,
   NO_FILTERS,
   type InvoiceFilters,
 } from "./filters";
@@ -18,7 +15,7 @@ import StatusFilterBar from "./StatusFilterBar";
 import type { Invoice } from "./types";
 
 type Props = {
-  // The list being filtered; firm and month options come from it.
+  // The list being filtered; firm options come from it.
   invoices: Invoice[];
   filters: InvoiceFilters;
   onChange: (changes: Partial<InvoiceFilters>) => void;
@@ -41,9 +38,6 @@ function InvoiceFilterBar({
   const clients = [
     ...new Map(invoices.map(({ client }) => [client.id, client])).values(),
   ].sort((a, b) => a.name.localeCompare(b.name, "hr"));
-  const months = [
-    ...new Set(invoices.map(monthOf).filter((month) => month !== null)),
-  ].sort((a, b) => b.localeCompare(a));
   // Filters that aren't shown here don't count as active.
   const active = hasActiveFilters({
     ...filters,
@@ -111,30 +105,50 @@ function InvoiceFilterBar({
           />
         )}
 
-        <TextField
-          select
-          size="small"
-          value={filters.month ?? ""}
-          onChange={(event) => onChange({ month: event.target.value || null })}
-          sx={{ width: 170 }}
-          slotProps={{
-            select: { displayEmpty: true },
-            htmlInput: { "aria-label": "Mjesec" },
-          }}
-        >
-          <MenuItem value="">Svi mjeseci</MenuItem>
-          {months.map((month) => (
-            <MenuItem key={month} value={month}>
-              {monthLabel(month)}
-            </MenuItem>
-          ))}
-        </TextField>
+        <DateField
+          label="Od"
+          value={filters.dateFrom}
+          max={filters.dateTo}
+          onChange={(dateFrom) => onChange({ dateFrom })}
+        />
+        <DateField
+          label="Do"
+          value={filters.dateTo}
+          min={filters.dateFrom}
+          onChange={(dateTo) => onChange({ dateTo })}
+        />
 
         {active && (
           <Button onClick={() => onChange(NO_FILTERS)}>Očisti filtere</Button>
         )}
       </Stack>
     </Stack>
+  );
+}
+
+type DateFieldProps = {
+  label: string;
+  value: string | null;
+  // The other end of the range, so the picker can't make it backwards.
+  min?: string | null;
+  max?: string | null;
+  onChange: (value: string | null) => void;
+};
+
+function DateField({ label, value, min, max, onChange }: DateFieldProps) {
+  return (
+    <TextField
+      type="date"
+      size="small"
+      label={label}
+      value={value ?? ""}
+      onChange={(event) => onChange(event.target.value || null)}
+      sx={{ width: 170 }}
+      slotProps={{
+        inputLabel: { shrink: true },
+        htmlInput: { min: min ?? undefined, max: max ?? undefined },
+      }}
+    />
   );
 }
 

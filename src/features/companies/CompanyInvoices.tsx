@@ -24,7 +24,7 @@ type Props = {
   onReview: (id: string, listIds: string[]) => void;
 };
 
-// One firm's invoices in one place, e.g. to close a month for that firm.
+// One firm's invoices in one place, e.g. to close a period for that firm.
 function CompanyInvoices({
   invoices,
   confirmedIds,

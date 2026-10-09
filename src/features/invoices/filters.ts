@@ -4,8 +4,9 @@ import type { Invoice } from "./types";
 export type InvoiceFilters = {
   status: StatusFilter;
   clientId: string | null;
-  // "YYYY-MM" of the invoice date (Datum računa), the period it's booked in.
-  month: string | null;
+  // Range of the invoice date (Datum računa) as YYYY-MM-DD, both inclusive.
+  dateFrom: string | null;
+  dateTo: string | null;
   search: string;
 };
 
@@ -20,7 +21,8 @@ export const MIXED_STATUSES: StatusFilter[] = [
 export const NO_FILTERS: InvoiceFilters = {
   status: "all",
   clientId: null,
-  month: null,
+  dateFrom: null,
+  dateTo: null,
   search: "",
 };
 
@@ -28,25 +30,30 @@ export function hasActiveFilters(filters: InvoiceFilters) {
   return (
     filters.status !== NO_FILTERS.status ||
     filters.clientId !== null ||
-    filters.month !== null ||
+    filters.dateFrom !== null ||
+    filters.dateTo !== null ||
     filters.search.trim() !== ""
   );
 }
 
-// Null when the invoice date is missing or not a date: such an invoice
-// belongs to no month (its missing date is already flagged as a warning).
-export function monthOf(invoice: Invoice) {
+// Invoice date (Datum računa) as YYYY-MM-DD, or null when missing or not a
+// date. Such an invoice falls outside any date range; its missing date is
+// already flagged as a warning.
+function dateOf(invoice: Invoice) {
   const date = invoice.fields.issueDate.value;
-  return date && /^\d{4}-\d{2}/.test(date) ? date.slice(0, 7) : null;
+  return date && /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : null;
 }
 
-// "2022-01" -> "Siječanj 2022"
-export function monthLabel(month: string) {
-  const label = new Date(`${month}-01T00:00:00`).toLocaleDateString("hr-HR", {
-    month: "long",
-    year: "numeric",
-  });
-  return label.charAt(0).toUpperCase() + label.slice(1).replace(/\.$/, "");
+// Both ends included. ISO dates compare correctly as plain text.
+function matchesDateRange(
+  invoice: Invoice,
+  from: string | null,
+  to: string | null,
+) {
+  if (from === null && to === null) return true;
+  const date = dateOf(invoice);
+  if (date === null) return false;
+  return (from === null || date >= from) && (to === null || date <= to);
 }
 
 // Accountants often type without diacritics, so "kolaci" finds "KOLAČI".
@@ -74,7 +81,7 @@ export function matchesFilters(
   return (
     matchesStatus(invoice, filters.status, confirmedIds.has(invoice.id)) &&
     (filters.clientId === null || invoice.client.id === filters.clientId) &&
-    (filters.month === null || monthOf(invoice) === filters.month) &&
+    matchesDateRange(invoice, filters.dateFrom, filters.dateTo) &&
     matchesSearch(invoice, filters.search)
   );
 }
