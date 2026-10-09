@@ -8,14 +8,14 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
-import TableSortLabel from "@mui/material/TableSortLabel";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import { formatAmount, formatDate, MISSING } from "./format";
 import { findIssues, type Issue } from "./status";
-import { nextSort, type Sort, type SortKey } from "./sorting";
+import SortableHeader from "./SortableHeader";
+import type { Sort, SortKey } from "./sorting";
 import type { Invoice } from "./types";
 
 // 10 is mostly for small lists like this demo's 25 invoices.
@@ -100,13 +100,12 @@ function InvoiceTable({
   onReview,
 }: Props) {
   const sortable = (key: SortKey, label: string) => (
-    <TableSortLabel
-      active={sort.key === key}
-      direction={sort.key === key ? sort.direction : "asc"}
-      onClick={() => onSortChange(nextSort(sort, key))}
-    >
-      {label}
-    </TableSortLabel>
+    <SortableHeader
+      sortKey={key}
+      label={label}
+      sort={sort}
+      onSortChange={onSortChange}
+    />
   );
   const columnCount = showClient ? 6 : 5;
   const [rowsPerPage, setRowsPerPage] = useState(loadRowsPerPage);

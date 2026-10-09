@@ -7,10 +7,10 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import TableSortLabel from "@mui/material/TableSortLabel";
 import SearchField from "../../components/SearchField";
 import { matchesText } from "../invoices/filters";
-import { compareValues, nextSort, type Sort } from "../invoices/sorting";
+import SortableHeader from "../invoices/SortableHeader";
+import { compareValues, nameKey, type Sort } from "../invoices/sorting";
 import type { Invoice } from "../invoices/types";
 
 export type CompanySortKey = "name" | "pending" | "confirmed";
@@ -37,7 +37,12 @@ function toCompanyRows(incoming: Invoice[], confirmed: Invoice[]) {
   };
   incoming.forEach((invoice) => rowFor(invoice).pending++);
   confirmed.forEach((invoice) => rowFor(invoice).confirmed++);
-  return [...rows.values()].sort((a, b) => a.name.localeCompare(b.name, "hr"));
+  return [...rows.values()];
+}
+
+// Names by the same rule as everywhere else (nameKey), counts as numbers.
+function sortValue(row: CompanyRow, key: CompanySortKey) {
+  return key === "name" ? nameKey(row.name) : row[key];
 }
 
 type Props = {
@@ -60,19 +65,27 @@ function CompanyTable({
   sort,
   onSortChange,
 }: Props) {
-  // Rows come sorted by name, so ties in a count stay alphabetical.
+  // Sorted by name first, so ties in a count stay alphabetical.
   const rows = toCompanyRows(incoming, confirmed)
     .filter((row) => matchesText(search, [row.name, row.taxId]))
-    .sort((a, b) => compareValues(a[sort.key], b[sort.key], sort.direction));
+    .sort((a, b) =>
+      compareValues(sortValue(a, "name"), sortValue(b, "name"), "asc"),
+    )
+    .sort((a, b) =>
+      compareValues(
+        sortValue(a, sort.key),
+        sortValue(b, sort.key),
+        sort.direction,
+      ),
+    );
 
   const sortable = (key: CompanySortKey, label: string) => (
-    <TableSortLabel
-      active={sort.key === key}
-      direction={sort.key === key ? sort.direction : "asc"}
-      onClick={() => onSortChange(nextSort(sort, key))}
-    >
-      {label}
-    </TableSortLabel>
+    <SortableHeader
+      sortKey={key}
+      label={label}
+      sort={sort}
+      onSortChange={onSortChange}
+    />
   );
 
   return (

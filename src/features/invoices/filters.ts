@@ -37,9 +37,9 @@ export function hasActiveFilters(filters: InvoiceFilters) {
 }
 
 // Invoice date (Datum računa) as YYYY-MM-DD, or null when missing or not a
-// date. Such an invoice falls outside any date range; its missing date is
-// already flagged as a warning.
-function dateOf(invoice: Invoice) {
+// date. Such an invoice falls outside any date range and sorts last; its
+// missing date is already flagged as a warning.
+export function dateOf(invoice: Invoice) {
   const date = invoice.fields.issueDate.value;
   return date && /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : null;
 }

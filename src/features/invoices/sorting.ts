@@ -1,3 +1,4 @@
+import { dateOf } from "./filters";
 import { findIssues } from "./status";
 import type { Invoice } from "./types";
 
@@ -27,7 +28,7 @@ type SortValue = string | number | null;
 // Names sort by their first letter or digit: "EDO-SLAD" (with quotes) under
 // E, not before A. Letters stay as they are, so Croatian order applies
 // (Ć after C) instead of treating Ć as C.
-function nameKey(name: string | null) {
+export function nameKey(name: string | null) {
   return name === null ? null : name.replace(/^[^\p{L}\p{N}]+/u, "");
 }
 
@@ -61,7 +62,8 @@ function sortValue(
     case "client":
       return nameKey(invoice.client.name);
     case "date":
-      return fields.issueDate.value;
+      // Malformed dates count as missing, the same as in the date filter.
+      return dateOf(invoice);
     case "total":
       return fields.totalAmount.value;
     case "status":
