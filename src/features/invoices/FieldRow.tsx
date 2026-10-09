@@ -91,13 +91,26 @@ function FieldRow({
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: "124px minmax(0, 1fr) 52px 20px",
+        // On phones the label goes above the input, which then gets the
+        // full width next to its badge and info icon.
+        gridTemplateColumns: {
+          xs: "minmax(0, 1fr) 52px 20px",
+          sm: "124px minmax(0, 1fr) 52px 20px",
+        },
         alignItems: "start",
         columnGap: 1.25,
+        rowGap: 0.5,
         py: 0.75,
       }}
     >
-      <Typography variant="body2" color="text.secondary" sx={{ pt: 1.1 }}>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{
+          pt: { xs: 0, sm: 1.1 },
+          gridColumn: { xs: "1 / -1", sm: "auto" },
+        }}
+      >
         {label}
         {required && " *"}
       </Typography>

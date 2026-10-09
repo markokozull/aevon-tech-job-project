@@ -43,6 +43,15 @@ const invoiceLabel = (number: string | null) =>
 // Both columns fill the screen below the page title and back button.
 const PANEL_HEIGHT = "calc(100vh - 170px)";
 
+// Words that give way on phones, leaving the icons.
+const HIDE_ON_PHONE = { display: { xs: "none", sm: "inline" } };
+// An icon-only button on phones: no gap where the text was.
+const ICON_ONLY_ON_PHONE = {
+  minWidth: { xs: 40, sm: 64 },
+  px: { xs: 1, sm: 2 },
+  "& .MuiButton-startIcon, & .MuiButton-endIcon": { mx: { xs: 0, sm: 1 } },
+};
+
 // A short slide when moving to the previous/next invoice, so the switch is
 // noticed without slowing the accountant down.
 const slideIn = (offset: number) => keyframes`
@@ -248,22 +257,33 @@ function InvoiceReview({
           disabled={confirming}
           onClick={() => leave(onBack)}
         >
-          Natrag na popis
+          Natrag
+          <Box component="span" sx={HIDE_ON_PHONE}>
+            &nbsp;na popis
+          </Box>
         </Button>
         {position && (
           // Labelled buttons, not bare arrows: the main way through a batch
           // of invoices, so it should be easy to spot and hit.
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+          <Stack
+            direction="row"
+            spacing={{ xs: 1, sm: 1.5 }}
+            sx={{ alignItems: "center" }}
+          >
             <Tooltip title="Prethodni račun (←)">
               {/* span: disabled buttons don't fire the events Tooltip needs */}
               <span>
                 <Button
                   variant="outlined"
                   startIcon={<ChevronLeftIcon />}
+                  aria-label="Prethodni račun"
                   disabled={!onPrev || confirming}
                   onClick={() => onPrev && leave(onPrev)}
+                  sx={ICON_ONLY_ON_PHONE}
                 >
-                  Prethodni
+                  <Box component="span" sx={HIDE_ON_PHONE}>
+                    Prethodni
+                  </Box>
                 </Button>
               </span>
             </Tooltip>
@@ -278,10 +298,14 @@ function InvoiceReview({
                 <Button
                   variant="outlined"
                   endIcon={<ChevronRightIcon />}
+                  aria-label="Sljedeći račun"
                   disabled={!onNext || confirming}
                   onClick={() => onNext && leave(onNext)}
+                  sx={ICON_ONLY_ON_PHONE}
                 >
-                  Sljedeći
+                  <Box component="span" sx={HIDE_ON_PHONE}>
+                    Sljedeći
+                  </Box>
                 </Button>
               </span>
             </Tooltip>
@@ -293,7 +317,9 @@ function InvoiceReview({
         sx={{
           display: "grid",
           gridTemplateColumns: {
-            xs: "1fr",
+            // minmax(0, …): wide content (the line items table) scrolls
+            // inside its box instead of stretching the page.
+            xs: "minmax(0, 1fr)",
             md: "minmax(0, 5fr) minmax(480px, 4fr)",
           },
           gap: 2,
@@ -304,21 +330,35 @@ function InvoiceReview({
       >
         <Paper
           variant="outlined"
-          sx={{ height: PANEL_HEIGHT, minHeight: 400, overflow: "hidden" }}
+          // On phones the original gets a fixed share of the screen and
+          // the form follows below it.
+          sx={{
+            height: { xs: "45vh", md: PANEL_HEIGHT },
+            minHeight: { xs: 240, md: 400 },
+            overflow: "hidden",
+          }}
         >
           <OriginalDocument invoice={invoice} />
         </Paper>
 
         <Paper
           variant="outlined"
+          // Desktop: a fixed-height panel that scrolls inside. Phones: it
+          // grows with the form, and the page scrolls.
           sx={{
-            height: PANEL_HEIGHT,
-            minHeight: 400,
+            height: { xs: "auto", md: PANEL_HEIGHT },
+            minHeight: { xs: 0, md: 400 },
             display: "flex",
             flexDirection: "column",
           }}
         >
-          <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflowY: { xs: "visible", md: "auto" },
+              p: { xs: 2, sm: 3 },
+            }}
+          >
             <Stack
               direction="row"
               spacing={1}
@@ -347,7 +387,17 @@ function InvoiceReview({
           <Stack
             direction="row"
             spacing={2}
-            sx={{ p: 2, borderTop: 1, borderColor: "divider" }}
+            sx={{
+              p: { xs: 1.5, sm: 2 },
+              borderTop: 1,
+              borderColor: "divider",
+              // On phones the buttons stay at the bottom of the screen
+              // while the form scrolls.
+              position: { xs: "sticky", md: "static" },
+              bottom: 0,
+              zIndex: 1,
+              bgcolor: "background.paper",
+            }}
           >
             {confirmed ? (
               <Button
@@ -367,7 +417,10 @@ function InvoiceReview({
                   disabled={!hasDrafts || hasErrors || confirming}
                   onClick={saveChanges}
                 >
-                  Spremi promjene
+                  Spremi
+                  <Box component="span" sx={HIDE_ON_PHONE}>
+                    {" promjene"}
+                  </Box>
                 </Button>
                 <Button
                   variant="contained"
@@ -379,7 +432,10 @@ function InvoiceReview({
                   loadingPosition="start"
                   onClick={requestConfirm}
                 >
-                  Potvrdi račun
+                  Potvrdi
+                  <Box component="span" sx={HIDE_ON_PHONE}>
+                    {" račun"}
+                  </Box>
                 </Button>
               </>
             )}
