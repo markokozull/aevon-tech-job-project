@@ -1,97 +1,65 @@
-# Pregled ulaznih računa
+# Aplikacija za pregled ulaznih računa
 
-An interface for an accountant to review and confirm incoming invoices: the original document next to the extracted data, with every uncertain or missing value pointed out.
+Sučelje za računovođu za pregled i potvrdu ulaznih računa: originalni dokument prikazan uz izvučene podatke, uz jasno istaknute sve nesigurne ili nedostajuće vrijednosti.
 
-## How to run
+## Pokretanje
 
-Requires Node 20.19+ or 22.12+ and Yarn 1.
-
-```bash
-make            # or: make start, or: yarn install && yarn dev
-```
-
-Then open http://localhost:5173. (`make help` lists the other shortcuts.)
-
-Without Node, with Docker only:
+Potreban je Node 22.12+ i Yarn 1:
 
 ```bash
-make docker     # or: docker build -t invoice-review . && docker run --rm -p 8080:80 invoice-review
+make start      # ili: yarn install && yarn dev
 ```
 
-Then open http://localhost:8080. This serves the production build; the first build takes a few minutes.
+Otvori http://localhost:5173.
 
-- Invoice data is `invoices.json`; the originals (photos, scans, PDFs) are in `public/originals/`. Five invoices have no original, and the app says so.
-- There is no backend. Confirmations and corrections are kept in the browser's `localStorage` (`invoice-review:confirmed`, `invoice-review:corrections`). Delete them in DevTools → Application → Local Storage to start over.
-- `make build` (or `yarn build`) type-checks and builds; `make lint` (or `yarn lint`) runs ESLint.
+Bez Nodea, samo s Dockerom:
 
----
+```bash
+make docker
+```
 
-> **TODO (Marko):** everything below is raw material, not finished text. The brief asks for these sections *in your own words*: keep what you agree with, rewrite it your way, delete the rest. Remove these TODO notes before submitting.
+Otvori http://localhost:8080 (prvi build traje nekoliko minuta).
 
-## Who I built it for
+## Kratak opis/svrha aplikacije
 
-> **TODO (Marko):** describe the accountant and their day in your words.
+Svrha aplikacije je olakšavanje i ubrzavanje svakodnevnog posla računovođe koji prolazi kroz velik broj ulaznih računa za više različitih firmi. Zamišljam da često radi pod pritiskom vremena i da mu nije cilj provesti što više vremena u aplikaciji, nego što brže uočiti grešku, potvrditi ispravne podatke i nastaviti na sljedeći račun. Zato sam se fokusirao na to da original računa i izvučeni podaci budu odmah jedan uz drugi, a ne da računovođa troši vrijeme skakanjem s jednog prozora na drugi i uspoređujući. Isto tako fokus je da stvari koje sustav nije dobro očitao ili nije siguran u točnost budu jasno uočljive kako bi se olakšao proces uređivanja/mijenjanja/prepravljanja računa.
 
-Raw material:
-- One accountant, 40 small client companies, several hundred invoices a month: PDFs, scans, phone photos (in the data: WhatsApp images, "IMG_0479.JPG", "scan0042.pdf").
-- Today: original in one window, extracted data in another, comparing field by field. Slow, and errors still slip through.
-- Probably works per company and per month (month-end close), not in the order invoices arrive.
-- Most invoices are fine; the time goes into the few where the extraction is unsure or wrong. The UI should make those few obvious and the rest quick.
+## (Ne)Rješenja
 
-## Decisions
+- Original i očitani podaci su jedno uz drugo na jednom ekranu. Time je riješen problem stalnog prebacivanja s prozora na prozor i nepotrebnog gubljenja vremena.
+- Računovođa ima glavnu riječ - on može potvrditi račun iako taj račun možda sadrži više upozorenja ili nepotpuno očitanih polja (Aplikacija neće automatski blokirati/potvrditi račune). Aplikacija je tu da ubrza i olakša proces, a ne da odlučuje umjesto računovođe.
+- Ono što je namjerno izostavljeno je automatska potvrda računa, iako je očitavanje 100%. Kao što je već navedeno iznad, računovođa je taj koji odlučuje bez obzira što kaže sustav ili aplikacija.
 
-> **TODO (Marko):** pick 3–5, at least one about something left out, and explain each in your words.
+## Tri pitanja koja bi postavio pravom računovođi
 
-Candidates, with the reasons behind them:
+- Koja polja na računu stvarno provjeravate svaki put, a koja samo kad vam nešto izgleda sumnjivo? - Da bih znao koja polja staviti u veći fokus i vidljivost.
+- Koji dio procesa vam oduzima najviše vremena ili stvara najviše frustracije? - Moja pretpostavka je bila gubljenje vremena na prebacivanju prozora i uspoređivanju, ali sigurno ima još stvari koje oduzimaju dosta vremena.
+- Ključne stvari koje nedostaju u ovoj aplikaciji, a koje računovođi dodatno olakšavaju posao?
 
-1. **Original and extracted data on one screen.** The brief's core problem is comparing across two windows. The review screen puts the photo or PDF on the left and the fields on the right.
-2. **Confidence on every field, coloured by how much to worry** (blue ≥ 80 %, orange 70–79 %, red < 70 %). Checks on top of that: missing required fields, net + VAT ≠ total, buyer ≠ the client, line items not adding up. The 80 % line is a placeholder to tune with real error data.
-3. **No green "ready" status.** An early version had a green "Spremno" chip, which implied the invoice was correct when it only meant no check fired. Unflagged invoices now say "Bez upozorenja"; green only means a person confirmed it.
-4. **Corrections are stored apart from what the system read.** `invoices.json` is never changed; each corrected field keeps the original value. That makes it always clear what a person changed, and it's the data for measuring the extraction (see below).
-5. **Confirming is never blocked, but never blind.** Invoices with warnings can be confirmed, because the accountant decides, not the software. Before that, a popup lists the remaining warnings and any unsaved edits.
-6. **Built for working through a batch.** Status filters (clean ones first, then the flagged ones), a per-firm view for month-end, Prethodni / Sljedeći through the filtered list, and the next invoice opens automatically after confirming.
+## Kako bih znao da aplikacija radi
 
-Deliberately left out (candidates):
-- **Editing line items (Stavke).** Bookkeeping mostly runs on the header totals, which are editable; line items are a cross-check, and the sum row shows when they don't add up. Editing them properly needs adding missing lines (inv-006/007 look like a line was missed), which is a much bigger feature. Depends on whether line items are booked (see questions).
-- **Confirming many invoices at once.** It would save clicks on clean invoices, but "no warnings" doesn't mean correct; bulk confirm brings back exactly the errors that slip through today.
-- **Discarding duplicates.** Duplicates are now detected and warned about (same number + supplier + total; inv-006/007 in the data, and deliberately *not* inv-001/012, the same supplier's monthly repeat of the same amount). But there's no "discard" action, so the extra copy stays in Ulazni. The right behaviour depends on how the accountant handles duplicates today.
-- **Tracking what was exported.** "Izvezi CSV" on Potvrđeni exports what the filters show (identifiers written so Excel keeps them exact), but doesn't remember what was already exported, so the same invoice could be imported twice. A real version would mark invoices as exported, or export straight into the bookkeeping software.
+Najvažnije bih mjerio koliko vremena računovođa u prosjeku potroši na pregled jednog računa i usporedio to sa starim načinom rada. Uz to bih pratio koliko računa uspije pregledati u određenom vremenu, koliko često mora ručno ispravljati podatke i koliko pogrešnih podataka ipak prođe nakon potvrde.
 
-## Questions for a real accountant
-
-> **TODO (Marko):** choose three and phrase them your way.
-
-Candidates:
-- Which fields do you actually type into your bookkeeping software? Do you book line items, or only the totals and VAT?
-- When an invoice is missing something (e.g. due date or currency), can you still book it, or does it go back to the client?
-- How do you handle the same invoice arriving twice, as a photo and as a PDF?
-- Do you work per company and month, or in the order invoices arrive?
-- Which mistake costs you most: a wrong amount, a wrong date, the wrong supplier, or a duplicate?
-
-## How I'd know it works
-
-> **TODO (Marko):** pick what you'd measure and why.
-
-Ideas:
-- **Time per invoice** from opening to confirming, split into flagged and clean, compared with how long it takes today.
-- **Errors that still get through:** invoices moved back from Potvrđeni, and errors found later (by the client, an auditor or at month-end).
-- **Corrections per field**, from the stored corrections: shows where the extraction is weakest.
-- **Whether the warnings are right:** how often a field ≥ 80 % still gets corrected (threshold too low?) versus how often flagged fields are confirmed unchanged (too many false alarms?).
-- **How often "Svejedno potvrdi" is used:** if it's most of the time, the warnings are noise.
+Novi način bih smatrao boljim ako računovođa može pregledati više računa u kraćem vremenu, bez povećanja broja grešaka. Dodatno bih pratio koliko često koristi označena upozorenja i pomažu li mu ona da brže pronađe problematična polja.
 
 ## AI
 
-> **TODO (Marko):** say what you used and give one example where you rejected or rewrote a suggestion, in your words.
+Za inicijalni plan i vizualizaciju projekta koristio sam ChatGPT. Dao sam mu opis zadatka s ciljem da mi pobliže objasni problem i rješenja i da mi vizualizira koncept.
 
-Facts:
-- Claude Code (Claude Opus) in VS Code, with `CLAUDE.md` and `docs/TASK.md` as project context, project skills for committing (`/commit`) and reviewing (`/review`), and headless Chrome screenshots to check layouts.
+Za development sam koristio Claude u VS Code-u.
 
-Examples from this project where the AI's suggestion was rejected or changed:
-- The AI suggested showing confidence only when it's low, and editing one field at a time. You designed the review form yourself (percentages on every field, "Spremi promjene" next to "Potvrdi račun") and had it rebuilt that way.
-- The AI's red/orange icon-and-severity redesign of the fields was reverted.
-- The AI's first status chip, a green "Spremno", overclaimed. Asking what it actually meant led to "Bez upozorenja".
-- The AI's first version put a "Potvrdi" button in every list row; you replaced it with "Pregledaj", so nothing is confirmed without opening it.
+- Kontekst projekta sam stavio u CLAUDE.md file
+- napravio 2 Claude skilla - za commit i za review da bih ubrzao proces
+- Koristio sam Auto i Plan Claude modove (Plan kada sam želio da mi Claude dobro razradi ideju i plan prije većeg feature-a)
 
-## Sketch
+Primjer gdje sam odbacio prijedlog AI-ja bio je ekran za pregled računa. Predloženo je da se confidence prikazuje samo kod problematičnih polja i da se polja uređuju tek nakon klika. Ja sam odlučio sva polja odmah prikazati kao inpute, prikazati confidence uz svako polje te odvojiti „Spremi promjene” od „Potvrdi račun”, jer mi je to prirodnije za korisnika koji kroz isti proces prolazi više puta dnevno.
 
-> **TODO (Marko):** optional — add a photo of any sketch made before coding, or remove this section.
+## Skice
+
+Skica na papiru prije kodiranja:
+
+![Skica na papiru](public/sketches/20261009_142447.webp)
+
+ChatGPT Mockup sučelja:
+
+![Mockup sučelja](public/sketches/Invoice%20Review%20Dashboard%20Mockup.webp)
