@@ -167,19 +167,26 @@ function InvoiceReview({
 
   const saveAndConfirm = async () => {
     setConfirming(true);
-    await confirmInvoice(id);
-    const hadChanges = hasDrafts;
-    save();
-    onConfirm(id);
-    // The number as it reads after this save, if it was just corrected.
-    const typed = draftValues.invoiceNumber;
-    const number =
-      typeof typed === "string" ? typed : fields.invoiceNumber.value;
-    toast.success(
-      `${invoiceLabel(number)} potvrđen` +
-        (hadChanges ? " · promjene spremljene" : ""),
-    );
-    setConfirming(false);
+    try {
+      await confirmInvoice(id);
+      const hadChanges = hasDrafts;
+      // The number as it reads after this save: a typed one, or none if it
+      // was just cleared.
+      let number = fields.invoiceNumber.value;
+      if ("invoiceNumber" in draftValues) {
+        const typed = draftValues.invoiceNumber;
+        number = typeof typed === "string" ? typed : null;
+      }
+      save();
+      onConfirm(id);
+      toast.success(
+        `${invoiceLabel(number)} potvrđen` +
+          (hadChanges ? " · promjene spremljene" : ""),
+      );
+    } finally {
+      // Always unlock, even if a real request failed.
+      setConfirming(false);
+    }
   };
 
   // Unsaved edits or warnings left: ask first. Otherwise confirm straight
