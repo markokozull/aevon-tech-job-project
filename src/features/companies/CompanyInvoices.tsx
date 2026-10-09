@@ -7,18 +7,19 @@ import {
   hasActiveFilters,
   matchesFilters,
   MIXED_STATUSES,
-  type InvoiceFilters,
 } from "../invoices/filters";
 import InvoiceFilterBar from "../invoices/InvoiceFilterBar";
 import InvoiceTable from "../invoices/InvoiceTable";
+import { sortInvoices } from "../invoices/sorting";
 import type { Invoice } from "../invoices/types";
+import type { ListState } from "../invoices/useListState";
 
 type Props = {
   // All of the firm's invoices, pending and confirmed.
   invoices: Invoice[];
   confirmedIds: ReadonlySet<string>;
-  filters: InvoiceFilters;
-  onFiltersChange: (changes: Partial<InvoiceFilters>) => void;
+  // This firm's own filters and sort.
+  list: ListState;
   onBack: () => void;
   // The invoice last opened, so the table comes back on its page.
   focusId: string | null;
@@ -30,8 +31,7 @@ type Props = {
 function CompanyInvoices({
   invoices,
   confirmedIds,
-  filters,
-  onFiltersChange,
+  list,
   onBack,
   focusId,
   onReview,
@@ -41,9 +41,13 @@ function CompanyInvoices({
     confirmedIds.has(invoice.id),
   ).length;
   // The firm is already chosen, so its filter doesn't apply here.
-  const ownFilters = { ...filters, clientId: null };
-  const visible = invoices.filter((invoice) =>
-    matchesFilters(invoice, ownFilters, confirmedIds),
+  const ownFilters = { ...list.filters, clientId: null };
+  const visible = sortInvoices(
+    invoices.filter((invoice) =>
+      matchesFilters(invoice, ownFilters, confirmedIds),
+    ),
+    list.sort,
+    confirmedIds,
   );
 
   return (
@@ -71,8 +75,8 @@ function CompanyInvoices({
 
       <InvoiceFilterBar
         invoices={invoices}
-        filters={filters}
-        onChange={onFiltersChange}
+        filters={list.filters}
+        onChange={list.updateFilters}
         confirmedIds={confirmedIds}
         statusOptions={MIXED_STATUSES}
         showClient={false}
@@ -88,7 +92,9 @@ function CompanyInvoices({
         confirmedIds={confirmedIds}
         showClient={false}
         focusId={focusId}
-        resetKey={JSON.stringify(filters)}
+        sort={list.sort}
+        onSortChange={list.setSort}
+        resetKey={list.resetKey}
         onReview={(id) =>
           onReview(
             id,

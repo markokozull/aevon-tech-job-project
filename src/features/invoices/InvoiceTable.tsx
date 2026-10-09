@@ -8,12 +8,14 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import { formatAmount, formatDate, MISSING } from "./format";
 import { findIssues, type Issue } from "./status";
+import { nextSort, type Sort, type SortKey } from "./sorting";
 import type { Invoice } from "./types";
 
 // 10 is mostly for small lists like this demo's 25 invoices.
@@ -77,7 +79,11 @@ type Props = {
   // The invoice last opened from here: the table starts on its page, so
   // coming back from a review doesn't jump to page 1.
   focusId: string | null;
-  // Changes whenever the filters change, which goes back to page 1.
+  // Sorting happens where the list is built, so prev/next follow it too;
+  // the table only shows it and reports clicks.
+  sort: Sort;
+  onSortChange: (sort: Sort) => void;
+  // Changes whenever the filters or sort change, which goes back to page 1.
   resetKey: string;
   onReview: (id: string) => void;
 };
@@ -88,9 +94,20 @@ function InvoiceTable({
   confirmedIds,
   showClient,
   focusId,
+  sort,
+  onSortChange,
   resetKey,
   onReview,
 }: Props) {
+  const sortable = (key: SortKey, label: string) => (
+    <TableSortLabel
+      active={sort.key === key}
+      direction={sort.key === key ? sort.direction : "asc"}
+      onClick={() => onSortChange(nextSort(sort, key))}
+    >
+      {label}
+    </TableSortLabel>
+  );
   const columnCount = showClient ? 6 : 5;
   const [rowsPerPage, setRowsPerPage] = useState(loadRowsPerPage);
   const [page, setPage] = useState(() => {
@@ -120,11 +137,15 @@ function InvoiceTable({
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell>Dobavljač / broj računa</TableCell>
-            {showClient && <TableCell>Klijent</TableCell>}
-            <TableCell>Datum računa</TableCell>
-            <TableCell align="right">Ukupno</TableCell>
-            <TableCell>Status</TableCell>
+            <TableCell>
+              {sortable("vendor", "Dobavljač / broj računa")}
+            </TableCell>
+            {showClient && (
+              <TableCell>{sortable("client", "Klijent")}</TableCell>
+            )}
+            <TableCell>{sortable("date", "Datum računa")}</TableCell>
+            <TableCell align="right">{sortable("total", "Ukupno")}</TableCell>
+            <TableCell>{sortable("status", "Status")}</TableCell>
             <TableCell align="right" />
           </TableRow>
         </TableHead>

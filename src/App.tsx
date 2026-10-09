@@ -22,10 +22,10 @@ import {
   hasActiveFilters,
   INCOMING_STATUSES,
   matchesFilters,
-  NO_FILTERS,
-  type InvoiceFilters,
 } from "./features/invoices/filters";
 import InvoiceFilterBar from "./features/invoices/InvoiceFilterBar";
+import { sortInvoices } from "./features/invoices/sorting";
+import { useListState } from "./features/invoices/useListState";
 import { useReviewNavigation } from "./features/invoices/useReviewNavigation";
 import { useReviewState } from "./features/invoices/useReviewState";
 import { NAV_ITEMS, type SectionId } from "./navigation";
@@ -34,20 +34,19 @@ function App() {
   const [section, setSection] = useState<SectionId>("incoming");
   // Invoice open for review (null shows the list) and its prev/next.
   const nav = useReviewNavigation();
-  // Kept here, not in the list, so they survive opening an invoice.
-  const [filters, setFilters] = useState<InvoiceFilters>(NO_FILTERS);
-  const updateFilters = (changes: Partial<InvoiceFilters>) =>
-    setFilters((current) => ({ ...current, ...changes }));
+  // Filters and sort of Ulazni and Potvrđeni.
+  const list = useListState();
+  const { filters } = list;
   // Firm whose invoices are open under "Firme"; null shows the firm list.
-  // It has its own filters, so opening a firm doesn't filter the main lists.
   const [companyId, setCompanyId] = useState<string | null>(null);
   // Search on the firm list; kept here so it survives opening a firm.
   const [companySearch, setCompanySearch] = useState("");
-  const [companyFilters, setCompanyFilters] =
-    useState<InvoiceFilters>(NO_FILTERS);
+  // A firm's own filters and sort, so opening a firm doesn't change the
+  // main lists. Each firm starts unfiltered.
+  const companyList = useListState();
   const openCompany = (id: string) => {
     setCompanyId(id);
-    setCompanyFilters(NO_FILTERS);
+    companyList.reset();
   };
   const review = useReviewState();
   const { confirmedIds, corrections } = review;
@@ -80,12 +79,20 @@ function App() {
   const incoming = invoices.filter((invoice) => !confirmedIds.has(invoice.id));
   const confirmed = invoices.filter((invoice) => confirmedIds.has(invoice.id));
   const reviewing = invoices.find((invoice) => invoice.id === nav.reviewingId);
-  const visibleIncoming = incoming.filter((invoice) =>
-    matchesFilters(invoice, filters, confirmedIds),
+  const visibleIncoming = sortInvoices(
+    incoming.filter((invoice) =>
+      matchesFilters(invoice, filters, confirmedIds),
+    ),
+    list.sort,
+    confirmedIds,
   );
   // Confirmed invoices have no review status to filter by.
-  const visibleConfirmed = confirmed.filter((invoice) =>
-    matchesFilters(invoice, { ...filters, status: "all" }, confirmedIds),
+  const visibleConfirmed = sortInvoices(
+    confirmed.filter((invoice) =>
+      matchesFilters(invoice, { ...filters, status: "all" }, confirmedIds),
+    ),
+    list.sort,
+    confirmedIds,
   );
   const noMatchText = "Nijedan račun ne odgovara filterima.";
 
@@ -135,7 +142,7 @@ function App() {
                 <InvoiceFilterBar
                   invoices={incoming}
                   filters={filters}
-                  onChange={updateFilters}
+                  onChange={list.updateFilters}
                   confirmedIds={confirmedIds}
                   statusOptions={INCOMING_STATUSES}
                   showClient
@@ -150,7 +157,9 @@ function App() {
                   confirmedIds={confirmedIds}
                   showClient
                   focusId={nav.lastId}
-                  resetKey={JSON.stringify(filters)}
+                  sort={list.sort}
+                  onSortChange={list.setSort}
+                  resetKey={list.resetKey}
                   onReview={(id) =>
                     nav.open(id, visibleIncoming.map((invoice) => invoice.id))
                   }
@@ -170,7 +179,7 @@ function App() {
                   <InvoiceFilterBar
                     invoices={confirmed}
                     filters={filters}
-                    onChange={updateFilters}
+                    onChange={list.updateFilters}
                     confirmedIds={confirmedIds}
                     statusOptions={[]}
                     showClient
@@ -195,7 +204,9 @@ function App() {
                   confirmedIds={confirmedIds}
                   showClient
                   focusId={nav.lastId}
-                  resetKey={JSON.stringify(filters)}
+                  sort={list.sort}
+                  onSortChange={list.setSort}
+                  resetKey={list.resetKey}
                   onReview={(id) =>
                     nav.open(id, visibleConfirmed.map((invoice) => invoice.id))
                   }
@@ -209,10 +220,7 @@ function App() {
                     (invoice) => invoice.client.id === companyId,
                   )}
                   confirmedIds={confirmedIds}
-                  filters={companyFilters}
-                  onFiltersChange={(changes) =>
-                    setCompanyFilters((current) => ({ ...current, ...changes }))
-                  }
+                  list={companyList}
                   onBack={() => setCompanyId(null)}
                   focusId={nav.lastId}
                   onReview={nav.open}
