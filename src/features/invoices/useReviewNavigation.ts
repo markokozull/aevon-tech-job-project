@@ -10,6 +10,8 @@ export function useReviewNavigation() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [queue, setQueue] = useState<string[]>([]);
   const [slideFrom, setSlideFrom] = useState<SlideFrom>(null);
+  // The last invoice opened, so the list can come back on its page.
+  const [lastId, setLastId] = useState<string | null>(null);
 
   const index = reviewingId === null ? -1 : queue.indexOf(reviewingId);
   const prevId = index > 0 ? queue[index - 1] : null;
@@ -19,6 +21,7 @@ export function useReviewNavigation() {
   const goTo = (id: string, from: SlideFrom) => {
     setSlideFrom(from);
     setReviewingId(id);
+    setLastId(id);
   };
 
   // `listIds`: the list the invoice was opened from, in its current order
@@ -42,6 +45,7 @@ export function useReviewNavigation() {
 
   return {
     reviewingId,
+    lastId,
     // 0-based position in the list, or null when opened from nowhere.
     position: index >= 0 ? { index, total: queue.length } : null,
     slideFrom,

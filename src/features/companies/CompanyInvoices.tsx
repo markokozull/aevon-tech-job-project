@@ -20,6 +20,8 @@ type Props = {
   filters: InvoiceFilters;
   onFiltersChange: (changes: Partial<InvoiceFilters>) => void;
   onBack: () => void;
+  // The invoice last opened, so the table comes back on its page.
+  focusId: string | null;
   // Opens an invoice, with the visible list for prev/next.
   onReview: (id: string, listIds: string[]) => void;
 };
@@ -31,6 +33,7 @@ function CompanyInvoices({
   filters,
   onFiltersChange,
   onBack,
+  focusId,
   onReview,
 }: Props) {
   const client = invoices[0]?.client;
@@ -84,6 +87,8 @@ function CompanyInvoices({
         }
         confirmedIds={confirmedIds}
         showClient={false}
+        focusId={focusId}
+        resetKey={JSON.stringify(filters)}
         onReview={(id) =>
           onReview(
             id,

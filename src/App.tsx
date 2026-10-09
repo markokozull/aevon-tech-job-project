@@ -124,6 +124,8 @@ function App() {
                   }
                   confirmedIds={confirmedIds}
                   showClient
+                  focusId={nav.lastId}
+                  resetKey={JSON.stringify(filters)}
                   onReview={(id) =>
                     nav.open(id, visibleIncoming.map((invoice) => invoice.id))
                   }
@@ -149,6 +151,8 @@ function App() {
                   }
                   confirmedIds={confirmedIds}
                   showClient
+                  focusId={nav.lastId}
+                  resetKey={JSON.stringify(filters)}
                   onReview={(id) =>
                     nav.open(id, visibleConfirmed.map((invoice) => invoice.id))
                   }
@@ -167,6 +171,7 @@ function App() {
                     setCompanyFilters((current) => ({ ...current, ...changes }))
                   }
                   onBack={() => setCompanyId(null)}
+                  focusId={nav.lastId}
                   onReview={nav.open}
                 />
               ) : (
