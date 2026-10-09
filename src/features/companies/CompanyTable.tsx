@@ -13,6 +13,9 @@ import SortableHeader from "../invoices/SortableHeader";
 import { compareValues, nameKey, type Sort } from "../invoices/sorting";
 import type { Invoice } from "../invoices/types";
 
+// The ID number gives way on phones; the name is what people look for.
+const HIDE_ON_PHONE = { display: { xs: "none", sm: "table-cell" } };
+
 export type CompanySortKey = "name" | "pending" | "confirmed";
 
 type CompanyRow = {
@@ -103,7 +106,7 @@ function CompanyTable({
           <TableHead>
             <TableRow>
               <TableCell>{sortable("name", "Firma")}</TableCell>
-              <TableCell>ID broj</TableCell>
+              <TableCell sx={HIDE_ON_PHONE}>ID broj</TableCell>
               <TableCell align="right">
                 {sortable("pending", "Na čekanju")}
               </TableCell>
@@ -142,7 +145,7 @@ function CompanyTable({
                     {row.name}
                   </Link>
                 </TableCell>
-                <TableCell>{row.taxId}</TableCell>
+                <TableCell sx={HIDE_ON_PHONE}>{row.taxId}</TableCell>
                 <TableCell align="right">{row.pending}</TableCell>
                 <TableCell align="right">{row.confirmed}</TableCell>
               </TableRow>

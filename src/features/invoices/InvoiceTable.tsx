@@ -10,7 +10,9 @@ import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useState } from "react";
 import { formatAmount, formatDate, MISSING } from "./format";
 import { findIssues, type Issue } from "./status";
@@ -19,6 +21,13 @@ import type { Sort, SortKey } from "./sorting";
 import type { Invoice } from "./types";
 
 // 10 is mostly for small lists like this demo's 25 invoices.
+// Columns that give way on smaller screens; the date moves under the
+// supplier name on phones.
+const HIDE_BELOW_MD = { display: { xs: "none", md: "table-cell" } };
+const HIDE_BELOW_SM = { display: { xs: "none", sm: "table-cell" } };
+const ONLY_BELOW_SM = { display: { xs: "inline", sm: "none" } };
+const BLOCK_BELOW_SM = { display: { xs: "block", sm: "none" } };
+
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_ROWS_PER_PAGE = 50;
 // A per-person preference, so it's remembered in this browser.
@@ -133,18 +142,28 @@ function InvoiceTable({
 
   return (
     <TableContainer component={Paper} variant="outlined">
-      <Table size="small">
+      <Table
+        size="small"
+        // A little tighter on phones, so three columns fit.
+        sx={{ "& .MuiTableCell-root": { px: { xs: 1, sm: 2 } } }}
+      >
         <TableHead>
           <TableRow>
             <TableCell>
               {sortable("vendor", "Dobavljač / broj računa")}
             </TableCell>
             {showClient && (
-              <TableCell>{sortable("client", "Klijent")}</TableCell>
+              <TableCell sx={HIDE_BELOW_MD}>
+                {sortable("client", "Klijent")}
+              </TableCell>
             )}
-            <TableCell>{sortable("date", "Datum računa")}</TableCell>
+            <TableCell sx={HIDE_BELOW_SM}>
+              {sortable("date", "Datum računa")}
+            </TableCell>
             <TableCell align="right">{sortable("total", "Ukupno")}</TableCell>
-            <TableCell>{sortable("status", "Status")}</TableCell>
+            <TableCell sx={HIDE_BELOW_SM}>
+              {sortable("status", "Status")}
+            </TableCell>
             <TableCell align="right" />
           </TableRow>
         </TableHead>
@@ -160,30 +179,73 @@ function InvoiceTable({
             const { id, client, fields } = invoice;
             const issues = findIssues(invoice);
             return (
-              <TableRow key={id} hover>
+              <TableRow
+                key={id}
+                hover
+                // The whole row opens the invoice: a bigger target than the
+                // button, especially on touch screens.
+                onClick={() => onReview(id)}
+                sx={{ cursor: "pointer" }}
+              >
                 <TableCell>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {fields.vendorName.value ?? MISSING}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {fields.invoiceNumber.value ?? "Broj računa nedostaje"}
+                    <Box component="span" sx={ONLY_BELOW_SM}>
+                      {" · "}
+                      {formatDate(fields.issueDate.value)}
+                    </Box>
                   </Typography>
+                  {/* On phones the status sits here, not in its own column. */}
+                  <Box sx={{ ...BLOCK_BELOW_SM, mt: 0.5 }}>
+                    <StatusChip
+                      confirmed={confirmedIds.has(id)}
+                      issues={issues}
+                    />
+                  </Box>
                 </TableCell>
-                {showClient && <TableCell>{client.name}</TableCell>}
-                <TableCell>{formatDate(fields.issueDate.value)}</TableCell>
+                {showClient && (
+                  <TableCell sx={HIDE_BELOW_MD}>{client.name}</TableCell>
+                )}
+                <TableCell sx={HIDE_BELOW_SM}>
+                  {formatDate(fields.issueDate.value)}
+                </TableCell>
                 <TableCell
                   align="right"
                   sx={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}
                 >
                   {formatAmount(fields.totalAmount.value, fields.currency.value)}
                 </TableCell>
-                <TableCell>
+                <TableCell sx={HIDE_BELOW_SM}>
                   <StatusChip confirmed={confirmedIds.has(id)} issues={issues} />
                 </TableCell>
-                <TableCell align="right">
-                  <Button size="small" variant="outlined" onClick={() => onReview(id)}>
+                <TableCell align="right" sx={{ pl: { xs: 0, sm: 2 } }}>
+                  {/* Kept for keyboard users; the row's click covers the
+                      mouse. stopPropagation: open once, not twice. */}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onReview(id);
+                    }}
+                    sx={{ display: { xs: "none", sm: "inline-flex" } }}
+                  >
                     Pregledaj
                   </Button>
+                  <IconButton
+                    size="small"
+                    aria-label="Pregledaj"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onReview(id);
+                    }}
+                    sx={{ display: { sm: "none" } }}
+                  >
+                    <ChevronRightIcon fontSize="small" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             );
@@ -205,6 +267,11 @@ function InvoiceTable({
             setPage(0);
           }}
           labelRowsPerPage="Redaka po stranici:"
+          // On phones only the range and the arrows fit on one line.
+          slotProps={{
+            selectLabel: { sx: { display: { xs: "none", sm: "block" } } },
+            select: { sx: { display: { xs: "none", sm: "inline-flex" } } },
+          }}
           labelDisplayedRows={({ from, to, count }) =>
             `${from}–${to} od ${count}`
           }

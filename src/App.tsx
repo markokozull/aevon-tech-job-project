@@ -191,10 +191,11 @@ function App() {
               {section === "confirmed" && (
                 <Stack spacing={2}>
                   <Stack
-                    direction="row"
+                    // Export under the filters on phones.
+                    direction={{ xs: "column", sm: "row" }}
                     spacing={2}
                     sx={{
-                      alignItems: "flex-start",
+                      alignItems: { xs: "stretch", sm: "flex-start" },
                       justifyContent: "space-between",
                     }}
                   >

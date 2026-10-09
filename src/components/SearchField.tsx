@@ -17,7 +17,7 @@ function SearchField({ value, onChange, placeholder, label }: Props) {
       placeholder={placeholder}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      sx={{ width: 300 }}
+      sx={{ width: { xs: "100%", sm: 300 } }}
       slotProps={{
         htmlInput: { "aria-label": label },
         input: {

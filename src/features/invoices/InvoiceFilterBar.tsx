@@ -1,4 +1,5 @@
 import Autocomplete from "@mui/material/Autocomplete";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -52,7 +53,8 @@ function InvoiceFilterBar({
     <Stack spacing={1.5}>
       {/* Status first, on its own row: it's the main way to split the work. */}
       {showStatus && (
-        <div>
+        // Scrolls sideways on narrow screens instead of overflowing.
+        <Box sx={{ maxWidth: "100%", overflowX: "auto" }}>
           <StatusFilterBar
             invoices={forStatusCounts}
             confirmedIds={confirmedIds}
@@ -60,7 +62,7 @@ function InvoiceFilterBar({
             value={filters.status}
             onChange={(status) => onChange({ status })}
           />
-        </div>
+        </Box>
       )}
 
       <Stack
@@ -86,7 +88,7 @@ function InvoiceFilterBar({
             onChange={(_, client) => onChange({ clientId: client?.id ?? null })}
             getOptionLabel={(client) => client.name}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            sx={{ width: 250 }}
+            sx={{ width: { xs: "100%", sm: 250 } }}
             renderInput={(params) => (
               <TextField {...params} placeholder="Sve firme" />
             )}
@@ -131,7 +133,8 @@ function DateField({ label, value, min, max, onChange }: DateFieldProps) {
       label={label}
       value={value ?? ""}
       onChange={(event) => onChange(event.target.value || null)}
-      sx={{ width: 170 }}
+      // Two side by side on phones (the row gap is 12px).
+      sx={{ width: { xs: "calc(50% - 6px)", sm: 170 } }}
       slotProps={{
         inputLabel: { shrink: true },
         htmlInput: { min: min ?? undefined, max: max ?? undefined },
