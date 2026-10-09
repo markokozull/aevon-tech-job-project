@@ -1,11 +1,14 @@
 import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import SearchField from "../../components/SearchField";
+import { matchesText } from "../invoices/filters";
 import type { Invoice } from "../invoices/types";
 
 type CompanyRow = {
@@ -37,49 +40,80 @@ type Props = {
   incoming: Invoice[];
   confirmed: Invoice[];
   onOpen: (clientId: string) => void;
+  search: string;
+  onSearchChange: (search: string) => void;
 };
 
-function CompanyTable({ incoming, confirmed, onOpen }: Props) {
-  const rows = toCompanyRows(incoming, confirmed);
+function CompanyTable({
+  incoming,
+  confirmed,
+  onOpen,
+  search,
+  onSearchChange,
+}: Props) {
+  const rows = toCompanyRows(incoming, confirmed).filter((row) =>
+    matchesText(search, [row.name, row.taxId]),
+  );
 
   return (
-    <TableContainer component={Paper} variant="outlined">
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Firma</TableCell>
-            <TableCell>ID broj</TableCell>
-            <TableCell align="right">Na čekanju</TableCell>
-            <TableCell align="right">Potvrđeno</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow
-              key={row.id}
-              hover
-              onClick={() => onOpen(row.id)}
-              sx={{ cursor: "pointer" }}
-            >
-              <TableCell>
-                {/* A real button, so the row also opens from the keyboard;
-                    its click bubbles up to the row's handler. */}
-                <Link
-                  component="button"
-                  underline="hover"
-                  sx={{ fontWeight: 600 }}
-                >
-                  {row.name}
-                </Link>
-              </TableCell>
-              <TableCell>{row.taxId}</TableCell>
-              <TableCell align="right">{row.pending}</TableCell>
-              <TableCell align="right">{row.confirmed}</TableCell>
+    <Stack spacing={2}>
+      <div>
+        <SearchField
+          value={search}
+          onChange={onSearchChange}
+          placeholder="Naziv firme ili ID broj"
+          label="Pretraži firme"
+        />
+      </div>
+      <TableContainer component={Paper} variant="outlined">
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Firma</TableCell>
+              <TableCell>ID broj</TableCell>
+              <TableCell align="right">Na čekanju</TableCell>
+              <TableCell align="right">Potvrđeno</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  align="center"
+                  sx={{ py: 6, color: "text.secondary" }}
+                >
+                  Nijedna firma ne odgovara pretrazi.
+                </TableCell>
+              </TableRow>
+            )}
+            {rows.map((row) => (
+              <TableRow
+                key={row.id}
+                hover
+                onClick={() => onOpen(row.id)}
+                sx={{ cursor: "pointer" }}
+              >
+                <TableCell>
+                  {/* A real button, so the row also opens from the keyboard;
+                      its click bubbles up to the row's handler. */}
+                  <Link
+                    component="button"
+                    underline="hover"
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {row.name}
+                  </Link>
+                </TableCell>
+                <TableCell>{row.taxId}</TableCell>
+                <TableCell align="right">{row.pending}</TableCell>
+                <TableCell align="right">{row.confirmed}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Stack>
   );
 }
 

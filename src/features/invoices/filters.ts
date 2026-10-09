@@ -65,12 +65,22 @@ function normalize(text: string) {
     .replace(/\p{Diacritic}/gu, "");
 }
 
-function matchesSearch({ fields }: Invoice, search: string) {
+// Whether any of the values contains the search text. An empty search
+// matches everything.
+export function matchesText(search: string, values: (string | null)[]) {
   const query = normalize(search.trim());
   if (query === "") return true;
-  return [fields.vendorName, fields.invoiceNumber, fields.vendorTaxId].some(
-    (field) => field.value !== null && normalize(field.value).includes(query),
+  return values.some(
+    (value) => value !== null && normalize(value).includes(query),
   );
+}
+
+function matchesSearch({ fields }: Invoice, search: string) {
+  return matchesText(search, [
+    fields.vendorName.value,
+    fields.invoiceNumber.value,
+    fields.vendorTaxId.value,
+  ]);
 }
 
 export function matchesFilters(

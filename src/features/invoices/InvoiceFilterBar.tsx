@@ -1,9 +1,7 @@
 import Autocomplete from "@mui/material/Autocomplete";
 import Button from "@mui/material/Button";
-import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import SearchIcon from "@mui/icons-material/Search";
 import {
   hasActiveFilters,
   matchesFilters,
@@ -11,6 +9,7 @@ import {
   type InvoiceFilters,
 } from "./filters";
 import type { StatusFilter } from "./status";
+import SearchField from "../../components/SearchField";
 import StatusFilterBar from "./StatusFilterBar";
 import type { Invoice } from "./types";
 
@@ -70,22 +69,11 @@ function InvoiceFilterBar({
         useFlexGap
         sx={{ flexWrap: "wrap", alignItems: "center" }}
       >
-        <TextField
-          size="small"
-          placeholder="Dobavljač, broj računa, ID broj"
+        <SearchField
           value={filters.search}
-          onChange={(event) => onChange({ search: event.target.value })}
-          sx={{ width: 300 }}
-          slotProps={{
-            htmlInput: { "aria-label": "Pretraži račune" },
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            },
-          }}
+          onChange={(search) => onChange({ search })}
+          placeholder="Dobavljač, broj računa, ID broj"
+          label="Pretraži račune"
         />
 
         {showClient && (

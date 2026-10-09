@@ -33,6 +33,8 @@ function App() {
   // Firm whose invoices are open under "Firme"; null shows the firm list.
   // It has its own filters, so opening a firm doesn't filter the main lists.
   const [companyId, setCompanyId] = useState<string | null>(null);
+  // Search on the firm list; kept here so it survives opening a firm.
+  const [companySearch, setCompanySearch] = useState("");
   const [companyFilters, setCompanyFilters] =
     useState<InvoiceFilters>(NO_FILTERS);
   const openCompany = (id: string) => {
@@ -169,6 +171,8 @@ function App() {
                   incoming={incoming}
                   confirmed={confirmed}
                   onOpen={openCompany}
+                  search={companySearch}
+                  onSearchChange={setCompanySearch}
                 />
               ))}
           </>
