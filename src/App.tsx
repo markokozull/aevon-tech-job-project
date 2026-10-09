@@ -81,9 +81,12 @@ function App() {
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar selected={section} onSelect={selectSection} />
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-          {current.label}
-        </Typography>
+        {/* Inside one firm, its name is the title, not the section's. */}
+        {companyId === null && (
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+            {current.label}
+          </Typography>
+        )}
         {reviewing ? (
           <InvoiceReview
             // A fresh form per invoice, so drafts never carry over.

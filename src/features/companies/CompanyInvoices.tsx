@@ -53,7 +53,7 @@ function CompanyInvoices({
 
       {client && (
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600 }}>
             {client.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
