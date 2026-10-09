@@ -50,7 +50,9 @@ const invoiceLabel = (number: string | null) =>
 // Both columns fill the screen below the page title and back button.
 const PANEL_HEIGHT = "calc(100vh - 170px)";
 
-// Words that give way on phones, leaving the icons.
+// Words that give way on phones, leaving the icons. Buttons lay out their
+// content as flex items, which drop a leading normal space, so the hidden
+// part starts with &nbsp;.
 const HIDE_ON_PHONE = { display: { xs: "none", sm: "inline" } };
 // An icon-only button on phones: no gap where the text was.
 const ICON_ONLY_ON_PHONE = {
@@ -467,7 +469,7 @@ function InvoiceReview({
                 >
                   Spremi
                   <Box component="span" sx={HIDE_ON_PHONE}>
-                    {" promjene"}
+                    &nbsp;promjene
                   </Box>
                 </Button>
                 <Button
@@ -482,7 +484,7 @@ function InvoiceReview({
                 >
                   Potvrdi
                   <Box component="span" sx={HIDE_ON_PHONE}>
-                    {" račun"}
+                    &nbsp;račun
                   </Box>
                 </Button>
               </>
