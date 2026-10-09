@@ -8,11 +8,11 @@ import {
   matchesFilters,
   NO_FILTERS,
   type InvoiceFilters,
-} from "./filters";
-import type { StatusFilter } from "./status";
-import SearchField from "../../components/SearchField";
+} from "../utils/filters";
+import type { StatusFilter } from "../utils/status";
+import SearchField from "../../../components/SearchField";
 import StatusFilterBar from "./StatusFilterBar";
-import type { Invoice } from "./types";
+import type { Invoice } from "../types";
 
 type Props = {
   // The list being filtered; firm options come from it.

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { NO_FILTERS, type InvoiceFilters } from "./filters";
-import { DEFAULT_SORT, type Sort } from "./sorting";
+import { NO_FILTERS, type InvoiceFilters } from "../utils/filters";
+import { DEFAULT_SORT, type Sort } from "../utils/sorting";
 
 // How one invoice list is filtered and sorted. Held above the list (in
 // App), so it survives opening an invoice and coming back.

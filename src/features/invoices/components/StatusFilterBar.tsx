@@ -1,7 +1,7 @@
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { matchesStatus, type StatusFilter } from "./status";
-import type { Invoice } from "./types";
+import { matchesStatus, type StatusFilter } from "../utils/status";
+import type { Invoice } from "../types";
 
 const LABELS: Record<StatusFilter, string> = {
   all: "Svi",

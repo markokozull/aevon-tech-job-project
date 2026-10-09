@@ -1,5 +1,5 @@
 import TableSortLabel from "@mui/material/TableSortLabel";
-import { nextSort, type Sort } from "./sorting";
+import { nextSort, type Sort } from "../utils/sorting";
 
 type Props<Key extends string> = {
   sortKey: Key;

@@ -1,5 +1,5 @@
 import { matchesStatus, type StatusFilter } from "./status";
-import type { Invoice } from "./types";
+import type { Invoice } from "../types";
 
 export type InvoiceFilters = {
   status: StatusFilter;

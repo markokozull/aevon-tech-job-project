@@ -14,11 +14,11 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useState } from "react";
-import { formatAmount, formatDate, MISSING } from "./format";
-import { findIssues, type Issue } from "./status";
+import { formatAmount, formatDate, MISSING } from "../utils/format";
+import { findIssues, type Issue } from "../utils/status";
 import SortableHeader from "./SortableHeader";
-import type { Sort, SortKey } from "./sorting";
-import type { Invoice } from "./types";
+import type { Sort, SortKey } from "../utils/sorting";
+import type { Invoice } from "../types";
 
 // 10 is mostly for small lists like this demo's 25 invoices.
 // Columns that give way on smaller screens; the date moves under the

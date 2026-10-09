@@ -18,17 +18,17 @@ import {
   sameValue,
   toInputText,
   type Corrections,
-} from "./corrections";
+} from "../utils/corrections";
 import ConfirmInvoiceDialog, {
   type PendingChange,
 } from "./ConfirmInvoiceDialog";
-import { confirmInvoice } from "./data";
-import { formatAmount, formatDate, formatFieldValue } from "./format";
+import { confirmInvoice } from "../data";
+import { formatAmount, formatDate, formatFieldValue } from "../utils/format";
 import InvoiceFields, { type FieldForm } from "./InvoiceFields";
 import OriginalDocument from "./OriginalDocument";
-import { FIELD_KEYS, FIELD_LABELS, findIssues, type Issue } from "./status";
-import type { FieldKey, FieldValue, Invoice } from "./types";
-import type { SlideFrom } from "./useReviewNavigation";
+import { FIELD_KEYS, FIELD_LABELS, findIssues, type Issue } from "../utils/status";
+import type { FieldKey, FieldValue, Invoice } from "../types";
+import type { SlideFrom } from "../hooks/useReviewNavigation";
 
 // Where the arrow keys already mean something: moving the cursor in a field,
 // choosing in a dropdown or menu, or anything inside an open dialog.

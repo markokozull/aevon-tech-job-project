@@ -1,4 +1,4 @@
-import type { FieldKey, FieldValue } from "./types";
+import type { FieldKey, FieldValue } from "../types";
 
 export const MISSING = "—";
 

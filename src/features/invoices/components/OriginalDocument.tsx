@@ -1,7 +1,7 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import ImageNotSupportedOutlinedIcon from "@mui/icons-material/ImageNotSupportedOutlined";
-import type { Invoice } from "./types";
+import type { Invoice } from "../types";
 
 type Props = {
   invoice: Invoice;

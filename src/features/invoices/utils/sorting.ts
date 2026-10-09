@@ -1,6 +1,6 @@
 import { dateOf } from "./filters";
 import { findIssues } from "./status";
-import type { Invoice } from "./types";
+import type { Invoice } from "../types";
 
 export type SortDirection = "asc" | "desc";
 

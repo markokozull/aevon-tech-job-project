@@ -9,8 +9,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { ReactNode } from "react";
 import FieldRow from "./FieldRow";
 import LineItemsTable from "./LineItemsTable";
-import { lineItemsSum, type Issue } from "./status";
-import type { FieldKey, Invoice } from "./types";
+import { lineItemsSum, type Issue } from "../utils/status";
+import type { FieldKey, Invoice } from "../types";
 
 // Fields that go into bookkeeping: always visible, in the order they
 // appear on a paper invoice. Which fields belong here is a guess to

@@ -7,11 +7,11 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import SearchField from "../../components/SearchField";
-import { matchesText } from "../invoices/filters";
-import SortableHeader from "../invoices/SortableHeader";
-import { compareValues, nameKey, type Sort } from "../invoices/sorting";
-import type { Invoice } from "../invoices/types";
+import SearchField from "../../../components/SearchField";
+import { matchesText } from "../../invoices/utils/filters";
+import SortableHeader from "../../invoices/components/SortableHeader";
+import { compareValues, nameKey, type Sort } from "../../invoices/utils/sorting";
+import type { Invoice } from "../../invoices/types";
 
 // The ID number gives way on phones; the name is what people look for.
 const HIDE_ON_PHONE = { display: { xs: "none", sm: "table-cell" } };

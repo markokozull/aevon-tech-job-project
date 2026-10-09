@@ -1,7 +1,7 @@
 import { normalizeText } from "./filters";
 import { fieldKind } from "./format";
 import { FIELD_LABELS } from "./status";
-import type { FieldKey, FieldValue, Invoice } from "./types";
+import type { FieldKey, FieldValue, Invoice } from "../types";
 
 // What goes into bookkeeping, in the order of the review form. Line items
 // are left out, like their editing.

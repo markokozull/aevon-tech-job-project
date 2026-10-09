@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { isFieldValue, type Corrections } from "./corrections";
-import { FIELD_KEYS } from "./status";
-import type { FieldKey, FieldValue } from "./types";
+import { isFieldValue, type Corrections } from "../utils/corrections";
+import { FIELD_KEYS } from "../utils/status";
+import type { FieldKey, FieldValue } from "../types";
 
 // What the accountant has decided, kept apart from the extracted data in
 // invoices.json. Saved to localStorage so a reload doesn't lose the work.

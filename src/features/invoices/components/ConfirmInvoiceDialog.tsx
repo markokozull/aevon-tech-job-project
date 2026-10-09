@@ -6,7 +6,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Typography from "@mui/material/Typography";
-import type { Issue } from "./status";
+import type { Issue } from "../utils/status";
 
 // An edited field that hasn't been saved yet, as text ready to show.
 export type PendingChange = {

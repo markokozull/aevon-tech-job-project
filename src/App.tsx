@@ -7,30 +7,30 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { ToastContainer, toast } from "react-toastify";
 import MobileTopBar from "./components/MobileTopBar";
 import Sidebar from "./components/Sidebar";
-import CompanyInvoices from "./features/companies/CompanyInvoices";
+import CompanyInvoices from "./features/companies/components/CompanyInvoices";
 import CompanyTable, {
   type CompanySortKey,
-} from "./features/companies/CompanyTable";
-import InvoiceReview from "./features/invoices/InvoiceReview";
-import InvoiceTable from "./features/invoices/InvoiceTable";
-import { applyCorrections } from "./features/invoices/corrections";
+} from "./features/companies/components/CompanyTable";
+import InvoiceReview from "./features/invoices/components/InvoiceReview";
+import InvoiceTable from "./features/invoices/components/InvoiceTable";
+import { applyCorrections } from "./features/invoices/utils/corrections";
 import { invoices as extracted } from "./features/invoices/data";
-import { markDuplicates } from "./features/invoices/duplicates";
+import { markDuplicates } from "./features/invoices/utils/duplicates";
 import {
   csvFilename,
   downloadCsv,
   toCsv,
-} from "./features/invoices/exportCsv";
+} from "./features/invoices/utils/exportCsv";
 import {
   hasActiveFilters,
   INCOMING_STATUSES,
   matchesFilters,
-} from "./features/invoices/filters";
-import InvoiceFilterBar from "./features/invoices/InvoiceFilterBar";
-import { sortInvoices, type Sort } from "./features/invoices/sorting";
-import { useListState } from "./features/invoices/useListState";
-import { useReviewNavigation } from "./features/invoices/useReviewNavigation";
-import { useReviewState } from "./features/invoices/useReviewState";
+} from "./features/invoices/utils/filters";
+import InvoiceFilterBar from "./features/invoices/components/InvoiceFilterBar";
+import { sortInvoices, type Sort } from "./features/invoices/utils/sorting";
+import { useListState } from "./features/invoices/hooks/useListState";
+import { useReviewNavigation } from "./features/invoices/hooks/useReviewNavigation";
+import { useReviewState } from "./features/invoices/hooks/useReviewState";
 import { NAV_ITEMS, type SectionId } from "./navigation";
 
 function App() {

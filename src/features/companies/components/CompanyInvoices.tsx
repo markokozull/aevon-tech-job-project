@@ -7,12 +7,12 @@ import {
   hasActiveFilters,
   matchesFilters,
   MIXED_STATUSES,
-} from "../invoices/filters";
-import InvoiceFilterBar from "../invoices/InvoiceFilterBar";
-import InvoiceTable from "../invoices/InvoiceTable";
-import { sortInvoices } from "../invoices/sorting";
-import type { Invoice } from "../invoices/types";
-import type { ListState } from "../invoices/useListState";
+} from "../../invoices/utils/filters";
+import InvoiceFilterBar from "../../invoices/components/InvoiceFilterBar";
+import InvoiceTable from "../../invoices/components/InvoiceTable";
+import { sortInvoices } from "../../invoices/utils/sorting";
+import type { Invoice } from "../../invoices/types";
+import type { ListState } from "../../invoices/hooks/useListState";
 
 type Props = {
   // All of the firm's invoices, pending and confirmed.

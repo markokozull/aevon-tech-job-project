@@ -1,5 +1,5 @@
 import { normalizeText } from "./filters";
-import type { Invoice } from "./types";
+import type { Invoice } from "../types";
 
 // Comparable form of a number or name: "1-41/22" and "1 41 22" match.
 function matchKey(text: string | null) {

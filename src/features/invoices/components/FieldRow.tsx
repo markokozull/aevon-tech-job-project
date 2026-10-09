@@ -7,15 +7,15 @@ import Typography from "@mui/material/Typography";
 import { alpha, type Theme } from "@mui/material/styles";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
-import { fieldKind, formatFieldValue } from "./format";
+import { fieldKind, formatFieldValue } from "../utils/format";
 import {
   confidenceLevel,
   FIELD_LABELS,
   REQUIRED_FIELDS,
   type ConfidenceLevel,
   type Issue,
-} from "./status";
-import type { Extracted, FieldKey, FieldValue } from "./types";
+} from "../utils/status";
+import type { Extracted, FieldKey, FieldValue } from "../types";
 
 // Currencies offered in the dropdown. The data only has BAM; the others are
 // the ones a Bosnian/Croatian company would plausibly receive.

@@ -7,14 +7,14 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import { alpha, type Theme } from "@mui/material/styles";
-import { formatNumber, MISSING } from "./format";
+import { formatNumber, MISSING } from "../utils/format";
 import {
   isUncertain,
   LINE_FIELD_LABELS,
   type Issue,
   type LineItemsSum,
-} from "./status";
-import type { Extracted, LineItem } from "./types";
+} from "../utils/status";
+import type { Extracted, LineItem } from "../types";
 
 const tint = (color: "warning" | "error") => ({
   bgcolor: (theme: Theme) => alpha(theme.palette[color].main, 0.1),

@@ -1,6 +1,6 @@
 import { fieldKind } from "./format";
 import { FIELD_KEYS } from "./status";
-import type { FieldKey, FieldValue, Invoice } from "./types";
+import type { FieldKey, FieldValue, Invoice } from "../types";
 
 // Values the accountant typed in, per invoice ID and field. Kept apart from
 // the extracted data so it's always clear what the system read and what a

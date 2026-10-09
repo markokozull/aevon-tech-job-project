@@ -5,7 +5,7 @@ import type {
   Invoice,
   InvoiceFields,
   LineItem,
-} from "./types";
+} from "../types";
 
 // Below this the extraction is treated as a guess the accountant must check.
 // Placeholder values: should be tuned against how often real errors slip
